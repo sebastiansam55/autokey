@@ -1280,6 +1280,7 @@ close and reopen the AutoKey window.\nThis message is only shown once per sessio
         self.app.show_script_error(self.ui)
 
     def on_run_script(self, widget, data=None):
+        self.on_save(None)
         t = threading.Thread(target=self.__runScript)
         t.start()
 
