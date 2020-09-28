@@ -38,7 +38,7 @@ class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
     with an abbreviation or hotkey.
     """
 
-    def __init__(self, title: str, show_in_tray_menu: bool=False, path: str=None):
+    def __init__(self, title: str, show_in_tray_menu: bool=False, path: str=None, custom_sort_for_hotkey: bool=False):
         AbstractAbbreviation.__init__(self)
         AbstractHotkey.__init__(self)
         AbstractWindowFilter.__init__(self)
@@ -48,6 +48,8 @@ class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         self.modes = []  # type: typing.List[TriggerMode]
         self.usageCount = 0
         self.show_in_tray_menu = show_in_tray_menu
+        self.custom_sort_for_hotkey = custom_sort_for_hotkey
+        self.custom_sort = []
         self.parent = None  # type: typing.Optional[Folder]
         self.path = path
         self.temporary = False
@@ -78,6 +80,8 @@ class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
             "modes": [mode.value for mode in self.modes],  # Store the enum value for compatibility with old user data.
             "usageCount": self.usageCount,
             "showInTrayMenu": self.show_in_tray_menu,
+            "customSortForHotkey": self.custom_sort_for_hotkey,
+            "customSort": self.custom_sort,
             "abbreviation": AbstractAbbreviation.get_serializable(self),
             "hotkey": AbstractHotkey.get_serializable(self),
             "filter": AbstractWindowFilter.get_serializable(self),
@@ -132,6 +136,11 @@ class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         self.modes = [TriggerMode(item) for item in data["modes"]]
         self.usageCount = data["usageCount"]
         self.show_in_tray_menu = data["showInTrayMenu"]
+        try:
+            self.custom_sort_for_hotkey = data["customSortForHotkey"]
+            self.custom_sort = data["customSort"]
+        except KeyError:
+            self.custom_sort_for_hotkey = False
 
         AbstractAbbreviation.load_from_serialized(self, data["abbreviation"])
         AbstractHotkey.load_from_serialized(self, data["hotkey"])
@@ -203,6 +212,24 @@ class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         """
         #del self.phrases[phrase.description]
         self.items.remove(item)
+
+    def get_item(self, description):
+        for item in self.items:
+            if item.description == description:
+                return item
+        return None
+
+    def get_phrase(self, description):
+        for item in self.items:
+            if item.description==description and type(item) is Phrase:
+                return item
+        return None
+
+    def get_script(self, description):
+        for item in self.items:
+            if item.description==description and type(item) is Script:
+                return item
+        return None
 
     def check_input(self, buffer, window_info):
         if TriggerMode.ABBREVIATION in self.modes:
