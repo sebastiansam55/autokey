@@ -349,6 +349,8 @@ class FolderPage:
         builder.connect_signals(self)
 
         self.showInTrayCheckbox = builder.get_object("showInTrayCheckbox")
+        self.customSortForHotkey = builder.get_object("customSortForHotkey")
+        self.customSortInfo = builder.get_object("customSortInfo")
         self.linkButton = builder.get_object("linkButton")
         label = self.linkButton.get_child()
         label.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
@@ -360,6 +362,8 @@ class FolderPage:
     def load(self, theFolder):
         self.currentFolder = theFolder
         self.showInTrayCheckbox.set_active(theFolder.show_in_tray_menu)
+        self.customSortForHotkey.set_active(theFolder.custom_sort_for_hotkey)
+        self.customSortInfo.set_text(str(theFolder.custom_sort)[1:-1]) #trim [] from list
         self.settingsWidget.load(theFolder)
 
         if self.is_new_item():
@@ -370,6 +374,8 @@ class FolderPage:
 
     def save(self):
         self.currentFolder.show_in_tray_menu = self.showInTrayCheckbox.get_active()
+        self.currentFolder.custom_sort_for_hotkey = self.customSortForHotkey.get_active()
+        self.currentFolder.custom_sort = self.get_custom_sort()
         self.settingsWidget.save()
         self.currentFolder.persist()
         set_linkbutton(self.linkButton, self.currentFolder.path)
@@ -412,6 +418,16 @@ class FolderPage:
 
     def set_dirty(self):
         self.parentWindow.set_dirty(True)
+
+    def get_custom_sort(self):
+        l = self.customSortInfo.get_text()
+        l = l.replace("\'","")
+        l = l.replace("\"","")
+        newl=[]
+        for item in l.split(","):
+            newl.append(item.strip().rstrip())
+        print(newl)
+        return newl
 
 
 class ScriptPage:
