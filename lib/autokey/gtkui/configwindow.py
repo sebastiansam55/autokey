@@ -276,6 +276,10 @@ class SettingsWidget:
         self.set_dirty()
         self.hotkeyEnabled = False
         self.clearHotkeyButton.set_sensitive(False)
+        self.currentItem.unset_hotkey()
+        self.parentWindow.app.monitor.suspend()
+        self.currentItem.persist()
+        self.parentWindow.app.monitor.unsuspend()
         self.hotkeyLabel.set_text(_("(None configured)"))
         self.hotkeyDialog.reset()
 
