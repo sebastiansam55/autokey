@@ -28,6 +28,7 @@ import subprocess
 import optparse
 import time
 import threading
+import re
 
 import gettext
 import dbus
@@ -247,6 +248,7 @@ class Application:
         @param message: Message to show in the popup
         """
         self.notifier.notify_error(message)
+        self.add_error_to_console()
 
     def update_notifier_visibility(self):
         self.notifier.update_visible_status()
@@ -305,6 +307,17 @@ class Application:
         dlg.set_transient_for(parent)
         dlg.run()
         dlg.destroy()
+
+    def add_error_to_console(self):
+        errormsg = self.service.scriptRunner.error
+        scriptName = re.search("Script name: \'(\w*)\'",errormsg).group(1)
+        if not self.configWindow is None and scriptName == self.configWindow.scriptPage.currentItem.description:
+            GLib.idle_add(self.configWindow.scriptPage.update_error_console, self.service.scriptRunner.error)
+            self.service.scriptRunner.error = ''
+            # revert the tray icon
+            # self.notifier.set_icon(cm.ConfigManager.SETTINGS[cm.NOTIFICATION_ICON])
+            # self.notifier.errorItem.hide()
+            # self.notifier.update_visible_status()
 
     def show_popup_menu(self, folders: list=None, items: list=None, onDesktop=True, title=None):
         if items is None:
