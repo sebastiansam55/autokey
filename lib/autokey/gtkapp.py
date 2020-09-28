@@ -311,8 +311,20 @@ class Application:
             items = []
         if folders is None:
             folders = []
-        self.menu = PopupMenu(self.service, folders, items, onDesktop, title)
-        self.menu.show_on_desktop()
+
+        if folders[0].custom_sort_for_hotkey:
+            newItems = []
+            folder_sort = folders[0].custom_sort
+            for desc in folder_sort:
+                item = folders[0].get_item(desc)
+                if type(item) is not None:
+                    newItems.append(item)
+
+            self.menu = PopupMenu(self.service, [], newItems, onDesktop, title, True)
+            self.menu.show_on_desktop()
+        else:
+            self.menu = PopupMenu(self.service, folders, items, onDesktop, title)
+            self.menu.show_on_desktop()
 
     def hide_menu(self):
         self.menu.remove_from_desktop()
