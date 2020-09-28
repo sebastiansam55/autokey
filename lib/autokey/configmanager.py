@@ -45,6 +45,7 @@ SERVICE_RUNNING = "serviceRunning"
 MENU_TAKES_FOCUS = "menuTakesFocus"
 SHOW_TRAY_ICON = "showTrayIcon"
 SORT_BY_USAGE_COUNT = "sortByUsageCount"
+SORT_BY_CUSTOM = "customSortForHotkey"
 #DETECT_UNWANTED_ABBR = "detectUnwanted"
 PROMPT_TO_SAVE = "promptToSave"
 #PREDICTIVE_LENGTH = "predictiveLength"
@@ -363,6 +364,7 @@ class ConfigManager:
                 MENU_TAKES_FOCUS: False,
                 SHOW_TRAY_ICON: True,
                 SORT_BY_USAGE_COUNT: True,
+                SORT_BY_CUSTOM: False,
                 #DETECT_UNWANTED_ABBR: False,
                 PROMPT_TO_SAVE:False,
                 #PREDICTIVE_LENGTH: 5,
