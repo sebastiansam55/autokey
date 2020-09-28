@@ -19,6 +19,7 @@ import subprocess
 import threading
 import time
 import re
+import os
 from typing import NamedTuple, Union, List
 
 from autokey import common, model
@@ -1154,6 +1155,70 @@ class Engine:
                 return folder
         return None
         
+    def create_folder(self, title, modes=None, hotkeys=None):
+        """
+        Create a base level folder by name.
+
+        Usage: C{engine.create_folder(title)}
+
+        #TODO add modes and hotkey stuff
+        """
+        for folder in self.configManager.allFolders:
+            if folder.title == title:
+                return False
+        self.monitor.suspend()
+        f = model.Folder(title)
+        f.persist()
+        self.configManager.folders.append(f)
+        self.monitor.unsuspend()
+        self.configManager.config_altered(True)
+
+    def remove_folder(self, folder):
+        """
+        Remove a base level folder by name.
+
+        Usage: C{engine.remove_folder(title)}
+
+        @param folder: plain text name of the top level folder to remove
+        THIS WILL REMOVE EVERYTHING INSIDE!
+        """
+        self.monitor.suspend()
+        folder.remove_data()
+        self.configManager.config_altered(True)
+        self.monitor.unsuspend()
+
+    def create_subfolder(self, folder, title):
+        """
+        Create a subfolder in the given base level folder
+
+        Usage: C{engine.create_subfolder(folder, title)}
+
+        @param folder: folder object created with C{engine.get_folder()}
+        @param title: Title of the subfolder to create
+        """
+        self.monitor.suspend()
+        f = model.Folder(title)
+        f.path = os.path.join(folder.path,title)
+        f.persist()
+        folder.add_folder(f)
+        self.configManager.config_altered(True)
+        self.monitor.unsuspend()
+
+    def remove_subfolder(self, folder, title):
+        """
+        Remove a subfolder in the given base level folder
+
+        Usage: C{engine.remove_subfolder(folder, title)}
+
+        @param folder: folder object created with C{engine.get_folder()}
+        @param title: Title of the subfolder to remove
+        """
+        self.monitor.suspend()
+        subfolder = self.get_folder(title)
+        subfolder.remove_data()
+        self.configManager.config_altered(True)
+        self.monitor.unsuspend()
+        
     def create_phrase(self, folder, description, contents):
         """
         Create a text phrase
@@ -1172,6 +1237,24 @@ class Engine:
         p.persist()
         self.monitor.unsuspend()
         self.configManager.config_altered(False)
+
+    def remove_phrase(self, folder, description):
+        """
+        Remove a phrase OR abbreviation OR hotkey
+
+        Usage: C{engine.remove_phrase(folder, description)}
+
+        @param folder: folder to remove the abbreviation from
+        @param description: description of the phrase to remove
+
+        """
+        self.monitor.suspend()
+        item = folder.get_phrase(description)
+        item.remove_data()
+        folder.remove_item(item)
+        folder.persist()
+        self.configManager.config_altered(True)
+        self.monitor.unsuspend()
         
     def create_abbreviation(self, folder, description, abbr, contents):
         """
@@ -1199,6 +1282,17 @@ class Engine:
         p.persist()
         self.monitor.unsuspend()
         self.configManager.config_altered(False)
+
+    def remove_abbreviation(self, folder, description):
+        """
+        Remove abbreviation
+
+        Usage: C{engine.remove_hotkey(folder,description)}
+
+        @param folder: folder to remove the abbreviation from
+        @param description: description of the phrase to remove
+        """
+        self.remove_phrase(folder, description)
         
     def create_hotkey(self, folder, description, modifiers, key, contents):
         """
@@ -1238,6 +1332,17 @@ class Engine:
         p.persist()
         self.monitor.unsuspend()
         self.configManager.config_altered(False)
+
+    def remove_hotkey(self, folder, description):
+        """
+        Remove hotkey
+
+        Usage: C{engine.remove_hotkey(folder,description)}
+
+        @param folder: folder to remove the abbreviation from
+        @param description: description of the phrase to remove
+        """
+        self.remove_phrase(folder, description)
 
     def run_script(self, description):
         """
