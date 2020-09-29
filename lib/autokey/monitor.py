@@ -19,6 +19,7 @@
 import threading
 import os.path
 import time
+import faulthandler; faulthandler.enable()
 
 from pyinotify import WatchManager, Notifier, EventsCodes, ProcessEvent
 
