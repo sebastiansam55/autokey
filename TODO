@@ -1,6 +1,11 @@
 #TODO
 Expose the gtk gedit theme selection in the preferences menu in Autokey
-Maybe change from zenity to building selection radio list so clicking on the text selects.
 Error logging
+	logging 
+	add logging handler with script.description+error.log
+Engine:
+	add notify() to use whatever error notify uses
+	Maybe change from zenity to building selection radio list so clicking on the text selects.
 Documentation update
+	Newer looking documentation pages
 	Including info on how save file works
