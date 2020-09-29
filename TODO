@@ -1,0 +1,6 @@
+#TODO
+Expose the gtk gedit theme selection in the preferences menu in Autokey
+Maybe change from zenity to building selection radio list so clicking on the text selects.
+Error logging
+Documentation update
+	Including info on how save file works

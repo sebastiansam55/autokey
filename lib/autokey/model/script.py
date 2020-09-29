@@ -93,6 +93,7 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         Try to serialize the data, and if it fails, fall back to checking the store and removing all non-serializable
         data.
         """
+        logger.info("Saving metadata for: "+self.description)
         serializable_data = self.get_serializable()
         try:
             self._try_persist_metadata(serializable_data)
