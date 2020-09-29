@@ -443,7 +443,7 @@ class HotkeySettingsDialog(DialogBase):
     def load(self, item):
         self.targetItem = item
         self.setButton.set_sensitive(True)
-        if autokey.model.helpers.TriggerMode.HOTKEY in item.modes:
+        if autokey.model.helpers.TriggerMode.HOTKEY in item.modes and not item.hotKey is None:
             self.controlButton.set_active(Key.CONTROL in item.modifiers)
             self.altButton.set_active(Key.ALT in item.modifiers)
             self.altgrButton.set_active(Key.ALT_GR in item.modifiers)
