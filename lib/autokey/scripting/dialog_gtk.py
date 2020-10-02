@@ -240,3 +240,13 @@ class GtkDialog:
         else:
             date_args = []
         return self._run_zenity(title, ["--calendar", "--date-format=" + format_str] + date_args, kwargs)
+
+    def list_menu_alternate(self, title, choices):
+        with subprocess.Popen(
+                        ["python3", "./autokey/gtkui/GtkRadioDialog.py", title] + choices,
+                        # ["pwd"],
+                        stdout=subprocess.PIPE,
+                        universal_newlines=True) as p:
+            output = p.communicate()[0][:-1]  # type: str # Drop trailing newline
+            return_code = p.returncode
+        return DialogData(return_code, output)
