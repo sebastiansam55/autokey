@@ -63,7 +63,7 @@ class SettingsDialog:
 
         self.gtkThemeCombo = Gtk.ComboBoxText.new()
         hboxgtktheme = builder.get_object("hboxgtktheme")
-        hboxgtktheme.pack_start(self.gtkThemeCombo, False, True, 0)
+        hboxgtktheme.pack_start(self.gtkThemeCombo, True, True, 0)
         hboxgtktheme.show_all()
 
         self.themeList = GtkSource.StyleSchemeManager().get_scheme_ids()
@@ -75,7 +75,7 @@ class SettingsDialog:
         
         self.iconStyleCombo = Gtk.ComboBoxText.new()
         hbox = builder.get_object("hbox4")
-        hbox.pack_start(self.iconStyleCombo, False, True, 0)
+        hbox.pack_start(self.iconStyleCombo, True, True, 0)
         hbox.show_all()
         
         for key, value in list(ICON_NAME_MAP.items()):
