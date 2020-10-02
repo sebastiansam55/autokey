@@ -442,7 +442,7 @@ class FolderPage:
         newl=[]
         for item in l.split(","):
             newl.append(item.strip().rstrip())
-        print(newl)
+        # print(newl)
         return newl
 
 
@@ -839,7 +839,7 @@ class ConfigWindow:
 
         toggleActions = [
             ("toolbar", None, _("_Show Toolbar"), None, _("Show/hide the toolbar"), self.on_toggle_toolbar),
-            ("record", Gtk.STOCK_MEDIA_RECORD, _("R_ecord keyboard/mouse"), None, _("Record keyboard/mouse actions"), self.on_record_keystrokes),
+            ("record", Gtk.STOCK_MEDIA_RECORD, _("Record keyboard/mouse"), None, _("Record keyboard/mouse actions"), self.on_record_keystrokes),
         ]
         actionGroup.add_toggle_actions(toggleActions)
 

@@ -9,3 +9,8 @@ Engine:
 Documentation update
 	Newer looking documentation pages
 	Including info on how save file works
+Pause function 
+	to stop listening to hotkeys after clicking thing from icon in bar
+Notification for when phrase with non-english characters that you shouldn't use the keyboard method
+Way to view the stored store variables
+Window filter to ignore windows
