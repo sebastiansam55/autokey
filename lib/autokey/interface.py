@@ -338,8 +338,9 @@ class XInterfaceBase(threading.Thread):
                 logger.debug("No mapping for [%s]", char)
                 
     def __needsMutterWorkaround(self, item):
-        if Key.SUPER not in item.modifiers:
-            return False
+        if item.modifiers is not None:
+            if Key.SUPER not in item.modifiers:
+                return False
     
         try:
             output = subprocess.check_output(["ps", "-eo", "command"]).decode()
