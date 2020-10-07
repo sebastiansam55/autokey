@@ -125,7 +125,7 @@ class SettingsDialog:
 
 
         #promptToSaveCheckbox no longer exists? This prevented saving in the Preferences window from what I can tell
-        #cm.ConfigManager.SETTINGS[cm_constants.PROMPT_TO_SAVE] = not self.promptToSaveCheckbox.get_active()
+        cm.ConfigManager.SETTINGS[cm_constants.PROMPT_TO_SAVE] = not self.autosaveCheckbox.get_active()
         cm.ConfigManager.SETTINGS[cm_constants.SHOW_TRAY_ICON] = self.showTrayCheckbox.get_active()
         cm.ConfigManager.SETTINGS[cm_constants.GTK_THEME] = self.gtkThemeCombo.get_active_text()
         #cm.ConfigManager.SETTINGS[MENU_TAKES_FOCUS] = self.allowKbNavCheckbox.get_active()
