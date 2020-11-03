@@ -252,10 +252,6 @@ class SettingsWidget:
     def on_setHotkeyButton_clicked(self, widget, data=None):
         self.hotkeyDialog.show()
 
-    def on_errorButton_clear(self, widget, data=None):
-        #self.update_error_console()
-        pass
-
     def on_hotkey_response(self, res):
         if res == Gtk.ResponseType.OK:
             self.set_dirty()
@@ -448,6 +444,7 @@ class ScriptPage:
 
         self.promptCheckbox = builder.get_object("promptCheckbox")
         self.showInTrayCheckbox = builder.get_object("showInTrayCheckbox")
+        self.customSortForHotkey = builder.get_object("customSortForHotkey")
         self.linkButton = builder.get_object("linkButton")
         label = self.linkButton.get_child()
         label.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
@@ -465,17 +462,6 @@ class ScriptPage:
         self.editor.set_smart_home_end(True)
         self.editor.set_insert_spaces_instead_of_tabs(True)
         self.editor.set_tab_width(4)
-        #error console
-        self.errorBuffer = GtkSource.Buffer()
-        self.errorViewer = GtkSource.View.new_with_buffer(self.errorBuffer)
-        scrolledWindow = builder.get_object("scrolledWindow")
-        scrolledWindow.add(self.errorViewer)
-        self.errorBuffer.set_language(self.__m.get_language("python"))
-        self.errorBuffer.set_style_scheme(self.__sm.get_scheme("classic"))
-        self.errorViewer.modify_font(fontDesc)
-        self.errorViewer.set_show_line_numbers(True)
-        self.errorViewer.set_editable(False)
-        self.errorViewer.set_cursor_visible(False)
 
         self.ui.show_all()
 
@@ -487,12 +473,6 @@ class ScriptPage:
         # self.buffer.set_text(theScript.code.encode("utf-8"))
         self.buffer.end_not_undoable_action()
         self.buffer.place_cursor(self.buffer.get_start_iter())
-
-        if theScript.has_errors():
-            name, length, time, error_contents = self.load_last_error(theScript)
-            self.update_error_console(name+" had an error last at: "+time+"\n"+error_contents)
-        else:
-            self.update_error_console("No Errors")
 
         self.promptCheckbox.set_active(theScript.prompt)
         self.showInTrayCheckbox.set_active(theScript.show_in_tray_menu)
@@ -616,31 +596,6 @@ class ScriptPage:
     def set_dirty(self):
         self.parentWindow.set_dirty(True)
 
-    def update_error_console(self, errorText):
-        self.errorBuffer.begin_not_undoable_action()
-        self.errorBuffer.set_text(errorText)
-        self.errorBuffer.end_not_undoable_action()
-
-    def load_error_list(self, theScript):
-        path, filename = os.path.split(theScript.path)
-        logPath = os.path.join(path, theScript.description+"error.log")
-        if os.path.exists(logPath):
-            with open(logPath, 'r') as f:
-                return f.read()
-
-    def load_last_error(self, theScript):
-        path, filename = os.path.split(theScript.path)
-        logPath = os.path.join(path, theScript.description+"error.log")
-        if os.path.exists(logPath):
-            with open(logPath, 'r') as f:
-                try:
-                    for line in f:
-                        testname = line.split(",")[0]
-                        name, length, time = line.split(",")
-                        if testname==filename:
-                            error_contents = f.read(int(length))
-                except:
-                    return [name, length, time, error_contents]
 
 class PhrasePage(ScriptPage):
 
@@ -657,6 +612,7 @@ class PhrasePage(ScriptPage):
         scrolledWindow.add(self.editor)
         self.promptCheckbox = builder.get_object("promptCheckbox")
         self.showInTrayCheckbox = builder.get_object("showInTrayCheckbox")
+        self.customSortForHotkey = builder.get_object("customSortForHotkey")
         self.sendModeCombo = Gtk.ComboBoxText.new()
         self.sendModeCombo.connect("changed", self.on_modified)
         sendModeHbox = builder.get_object("sendModeHbox")

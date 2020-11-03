@@ -1169,13 +1169,6 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
     def get_description(self, buffer):
         return self.description
 
-    def has_errors(self):
-        path, filename = os.path.split(self.path)
-        logPath = os.path.join(path, self.description+"error.log")
-        if os.path.exists(logPath) and os.path.getsize(logPath)>0:
-            return True
-        return False
-
     def __str__(self):
         return "script '{}'".format(self.description)
 
