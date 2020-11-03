@@ -20,8 +20,6 @@ import traceback
 import collections
 import time
 import logging
-import os
-from datetime import datetime
 
 from autokey import common
 from autokey.iomediator.key import Key, KEY_FIND_RE
@@ -33,7 +31,6 @@ from . import scripting, model, scripting_Store, scripting_highlevel
 from .configmanager import ConfigManager, SERVICE_RUNNING, SCRIPT_GLOBALS, save_config, UNDO_USING_BACKSPACE
 import threading
 logger = logging.getLogger("service")
-errorLogger = logging.getLogger("error")
 
 MAX_STACK_LENGTH = 150
 
@@ -487,15 +484,6 @@ class ScriptRunner:
         try:
             exec(script.code, scope)
         except Exception as e:
-            exception = traceback.format_exc()
-            basePath, scriptFilename = os.path.split(script.path)
-            hdlr = logging.FileHandler(basePath+"/"+script.description+"error.log") #build the file handler for the log
-            timestamp = str(datetime.now())
-            errorLogger.addHandler(hdlr) #add handler for the specific script error log
-            errorLogger.error(scriptFilename+","+str(len(exception))+","+timestamp) #log the filename, length for f.read() and timestamp
-            # there has to be a better way to do this.
-            errorLogger.error(exception) #log the actual error
-            errorLogger.handlers = [] # remove the error handler for the specific error log
             logger.exception("Script error")
             self.error = "Script name: '{}'\n{}".format(script.description, traceback.format_exc())
             self.app.notify_error("The script '{}' encountered an error".format(script.description))
