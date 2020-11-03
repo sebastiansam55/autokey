@@ -424,7 +424,6 @@ class ScriptPage:
         settings = Gio.Settings.new("org.gnome.desktop.interface")
         fontDesc = Pango.font_description_from_string(settings.get_string("monospace-font-name"))
         self.editor.modify_font(fontDesc)
-        self.editor.set_show_line_numbers(True)
 
         self.promptCheckbox = builder.get_object("promptCheckbox")
         self.showInTrayCheckbox = builder.get_object("showInTrayCheckbox")
