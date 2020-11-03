@@ -412,7 +412,7 @@ class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
     with an abbreviation or hotkey.
     """
 
-    def __init__(self, title: str, show_in_tray_menu: bool=False, path: str=None, custom_sort_for_hotkey: bool=False):
+    def __init__(self, title: str, show_in_tray_menu: bool=False, path: str=None):
         AbstractAbbreviation.__init__(self)
         AbstractHotkey.__init__(self)
         AbstractWindowFilter.__init__(self)
@@ -422,8 +422,6 @@ class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         self.modes = []  # type: typing.List[TriggerMode]
         self.usageCount = 0
         self.show_in_tray_menu = show_in_tray_menu
-        self.custom_sort_for_hotkey = custom_sort_for_hotkey
-        self.custom_sort = []
         self.parent = None  # type: typing.Optional[Folder]
         self.path = path
 
@@ -453,8 +451,6 @@ class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
             "modes": [mode.value for mode in self.modes],  # Store the enum value for compatibility with old user data.
             "usageCount": self.usageCount,
             "showInTrayMenu": self.show_in_tray_menu,
-            "customSortForHotkey": self.custom_sort_for_hotkey,
-            "customSort": self.custom_sort,
             "abbreviation": AbstractAbbreviation.get_serializable(self),
             "hotkey": AbstractHotkey.get_serializable(self),
             "filter": AbstractWindowFilter.get_serializable(self),
@@ -509,11 +505,6 @@ class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         self.modes = [TriggerMode(item) for item in data["modes"]]
         self.usageCount = data["usageCount"]
         self.show_in_tray_menu = data["showInTrayMenu"]
-        try:
-            self.custom_sort_for_hotkey = data["customSortForHotkey"]
-            self.custom_sort = data["customSort"]
-        except KeyError:
-            self.custom_sort_for_hotkey = False
 
         AbstractAbbreviation.load_from_serialized(self, data["abbreviation"])
         AbstractHotkey.load_from_serialized(self, data["hotkey"])
@@ -585,24 +576,6 @@ class Folder(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         """
         #del self.phrases[phrase.description]
         self.items.remove(item)
-
-    def get_item(self, description):
-        for item in self.items:
-            if item.description == description:
-                return item
-        return None
-
-    def get_phrase(self, description):
-        for item in self.items:
-            if item.description==description and type(item) is Phrase:
-                return item
-        return None
-
-    def get_script(self, description):
-        for item in self.items:
-            if item.description==description and type(item) is Script:
-                return item
-        return None
 
     def check_input(self, buffer, window_info):
         if TriggerMode.ABBREVIATION in self.modes:
@@ -678,8 +651,6 @@ class Phrase(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         self.matchCase = False
         self.parent = None
         self.show_in_tray_menu = False
-        self.custom_sort_for_hotkey = False
-        self.custom_sort = []
         self.sendMode = SendMode.KEYBOARD
         self.path = path
 
@@ -714,8 +685,6 @@ class Phrase(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
             "omitTrigger": self.omitTrigger,
             "matchCase": self.matchCase,
             "showInTrayMenu": self.show_in_tray_menu,
-            "customSortForHotkey": self.custom_sort_for_hotkey,
-            "customSort": self.custom_sort,
             "abbreviation": AbstractAbbreviation.get_serializable(self),
             "hotkey": AbstractHotkey.get_serializable(self),
             "filter": AbstractWindowFilter.get_serializable(self),
@@ -751,11 +720,6 @@ class Phrase(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         self.omitTrigger = data["omitTrigger"]
         self.matchCase = data["matchCase"]
         self.show_in_tray_menu = data["showInTrayMenu"]
-        try:
-            self.custom_sort_for_hotkey = data["customSortForHotkey"]
-            self.custom_sort = data["customSort"]
-        except KeyError:
-            self.custom_sort_for_hotkey = False
         self.sendMode = SendMode(data.get("sendMode", SendMode.KEYBOARD))
         AbstractAbbreviation.load_from_serialized(self, data["abbreviation"])
         AbstractHotkey.load_from_serialized(self, data["hotkey"])
@@ -791,8 +755,6 @@ class Phrase(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         self.matchCase = source_phrase.matchCase
         self.parent = source_phrase.parent
         self.show_in_tray_menu = source_phrase.show_in_tray_menu
-        self.custom_sort_for_hotkey = source_phrase.custom_sort_for_hotkey
-        self.custom_sort = source_phrase.custom_sort
         self.copy_abbreviation(source_phrase)
         self.copy_hotkey(source_phrase)
         self.copy_window_filter(source_phrase)
@@ -965,8 +927,6 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         self.omitTrigger = False
         self.parent = None
         self.show_in_tray_menu = False
-        self.custom_sort_for_hotkey = False
-        self.custom_sort = []
         self.path = path
 
     def build_path(self, base_name=None):
@@ -999,8 +959,6 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
             "prompt": self.prompt,
             "omitTrigger": self.omitTrigger,
             "showInTrayMenu": self.show_in_tray_menu,
-            "customSortForHotkey": self.custom_sort_for_hotkey,
-            "customSort": self.custom_sort,
             "abbreviation": AbstractAbbreviation.get_serializable(self),
             "hotkey": AbstractHotkey.get_serializable(self),
             "filter": AbstractWindowFilter.get_serializable(self)
@@ -1083,12 +1041,6 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         self.prompt = data["prompt"]
         self.omitTrigger = data["omitTrigger"]
         self.show_in_tray_menu = data["showInTrayMenu"]
-        try:
-            self.custom_sort_for_hotkey = data["custom_sort_for_hotkey"]
-            self.custom_sort = data["customSort"]
-        except KeyError:
-            self.custom_sort_for_hotkey = False
-
         AbstractAbbreviation.load_from_serialized(self, data["abbreviation"])
         AbstractHotkey.load_from_serialized(self, data["hotkey"])
         AbstractWindowFilter.load_from_serialized(self, data["filter"])
@@ -1118,8 +1070,6 @@ class Script(AbstractAbbreviation, AbstractHotkey, AbstractWindowFilter):
         self.omitTrigger = source_script.omitTrigger
         self.parent = source_script.parent
         self.show_in_tray_menu = source_script.show_in_tray_menu
-        self.custom_sort_for_hotkey = source_script.custom_sort_for_hotkey
-        self.custom_sort = source_script.custom_sort
         self.copy_abbreviation(source_script)
         self.copy_hotkey(source_script)
         self.copy_window_filter(source_script)

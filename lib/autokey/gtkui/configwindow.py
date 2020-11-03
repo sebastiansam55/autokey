@@ -341,8 +341,6 @@ class FolderPage:
         builder.connect_signals(self)
 
         self.showInTrayCheckbox = builder.get_object("showInTrayCheckbox")
-        self.customSortForHotkey = builder.get_object("customSortForHotkey")
-        self.customSortInfo = builder.get_object("customSortInfo")
         self.linkButton = builder.get_object("linkButton")
         label = self.linkButton.get_child()
         label.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
@@ -354,8 +352,6 @@ class FolderPage:
     def load(self, theFolder):
         self.currentFolder = theFolder
         self.showInTrayCheckbox.set_active(theFolder.show_in_tray_menu)
-        self.customSortForHotkey.set_active(theFolder.custom_sort_for_hotkey)
-        self.customSortInfo.set_text(str(theFolder.custom_sort)[1:-1]) #trim [] from list
         self.settingsWidget.load(theFolder)
 
         if self.is_new_item():
@@ -366,23 +362,11 @@ class FolderPage:
 
     def save(self):
         self.currentFolder.show_in_tray_menu = self.showInTrayCheckbox.get_active()
-        self.currentFolder.custom_sort_for_hotkey = self.customSortForHotkey.get_active()
-        self.currentFolder.custom_sort = self.get_custom_sort()
         self.settingsWidget.save()
         self.currentFolder.persist()
         set_linkbutton(self.linkButton, self.currentFolder.path)
 
         return not self.currentFolder.path.startswith(cm.CONFIG_DEFAULT_FOLDER)
-
-    def get_custom_sort(self):
-        l = self.customSortInfo.get_text()
-        l = l.replace("\'","")
-        l = l.replace("\"","")
-        newl=[]
-        for item in l.split(","):
-            newl.append(item.strip().rstrip())
-        print(newl)
-        return newl
 
     def set_item_title(self, newTitle):
         self.currentFolder.title = newTitle
@@ -433,7 +417,7 @@ class ScriptPage:
         self.buffer = GtkSource.Buffer()
         self.buffer.connect("changed", self.on_modified)
         self.editor = GtkSource.View.new_with_buffer(self.buffer)
-        scrolledWindow = builder.get_object("scrolledWindow1")
+        scrolledWindow = builder.get_object("scrolledWindow")
         scrolledWindow.add(self.editor)
 
         # Editor font
@@ -444,7 +428,6 @@ class ScriptPage:
 
         self.promptCheckbox = builder.get_object("promptCheckbox")
         self.showInTrayCheckbox = builder.get_object("showInTrayCheckbox")
-        self.customSortForHotkey = builder.get_object("customSortForHotkey")
         self.linkButton = builder.get_object("linkButton")
         label = self.linkButton.get_child()
         label.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
@@ -476,7 +459,6 @@ class ScriptPage:
 
         self.promptCheckbox.set_active(theScript.prompt)
         self.showInTrayCheckbox.set_active(theScript.show_in_tray_menu)
-        self.customSortForHotkey.set_active(theScript.custom_sort_for_hotkey)
         self.settingsWidget.load(theScript)
 
         if self.is_new_item():
@@ -490,7 +472,6 @@ class ScriptPage:
 
         self.currentItem.prompt = self.promptCheckbox.get_active()
         self.currentItem.show_in_tray_menu = self.showInTrayCheckbox.get_active()
-        self.currentItem.custom_sort_for_hotkey = self.customSortForHotkey.get_active()
 
         self.settingsWidget.save()
         self.currentItem.persist()
@@ -614,7 +595,6 @@ class PhrasePage(ScriptPage):
         scrolledWindow.add(self.editor)
         self.promptCheckbox = builder.get_object("promptCheckbox")
         self.showInTrayCheckbox = builder.get_object("showInTrayCheckbox")
-        self.customSortForHotkey = builder.get_object("customSortForHotkey")
         self.sendModeCombo = Gtk.ComboBoxText.new()
         self.sendModeCombo.connect("changed", self.on_modified)
         sendModeHbox = builder.get_object("sendModeHbox")
@@ -660,7 +640,6 @@ class PhrasePage(ScriptPage):
 
         self.promptCheckbox.set_active(thePhrase.prompt)
         self.showInTrayCheckbox.set_active(thePhrase.show_in_tray_menu)
-        self.customSortForHotkey.set_active(thePhrase.custom_sort_for_hotkey)
         self.settingsWidget.load(thePhrase)
 
         if self.is_new_item():
@@ -683,7 +662,6 @@ class PhrasePage(ScriptPage):
 
         self.currentItem.prompt = self.promptCheckbox.get_active()
         self.currentItem.show_in_tray_menu = self.showInTrayCheckbox.get_active()
-        self.currentItem.custom_sort_for_hotkey = self.customSortForHotkey.get_active()
         self.currentItem.sendMode = model.SEND_MODES[self.sendModeCombo.get_active_text()]
 
         self.settingsWidget.save()

@@ -27,7 +27,7 @@ class PopupMenu(Gtk.Menu):
     A popup menu that allows the user to select a phrase.
     """
 
-    def __init__(self, service, folders: list=None, items: list=None, onDesktop=True, title=None, customSort=False):
+    def __init__(self, service, folders: list=None, items: list=None, onDesktop=True, title=None):
         Gtk.Menu.__init__(self)
         #self.set_take_focus(cm.ConfigManager.SETTINGS[MENU_TAKES_FOCUS])
         if items is None:
@@ -36,20 +36,16 @@ class PopupMenu(Gtk.Menu):
             folders = []
         self.__i = 1
         self.service = service
-        self.customSort = customSort
-
-        if not customSort:
-            if cm.ConfigManager.SETTINGS[cm.SORT_BY_USAGE_COUNT]:
-                _logger.debug("Sorting phrase menu by usage count")
-                folders.sort(key=lambda obj: obj.usageCount, reverse=True)
-                items.sort(key=lambda obj: obj.usageCount, reverse=True)
-            else:
-                _logger.debug("Sorting phrase menu by item name/title")
-                folders.sort(key=lambda obj: str(obj))
-                items.sort(key=lambda obj: str(obj))      
+        
+        if cm.ConfigManager.SETTINGS[cm.SORT_BY_USAGE_COUNT]:
+            _logger.debug("Sorting phrase menu by usage count")
+            folders.sort(key=lambda obj: obj.usageCount, reverse=True)
+            items.sort(key=lambda obj: obj.usageCount, reverse=True)
         else:
-            _logger.debug("Sorting phrase menu by custom")
-
+            _logger.debug("Sorting phrase menu by item name/title")
+            folders.sort(key=lambda obj: str(obj))
+            items.sort(key=lambda obj: str(obj))      
+        
         if cm.ConfigManager.SETTINGS[cm.TRIGGER_BY_INITIAL]:
             _logger.debug("Triggering menu item by first initial")
             self.triggerInitial = 1
@@ -62,7 +58,7 @@ class PopupMenu(Gtk.Menu):
             # Only one folder - create menu with just its folders and items
             for folder in folders[0].folders:
                 menuItem = Gtk.MenuItem(label=self.__getMnemonic(folder.title, onDesktop))
-                menuItem.set_submenu(PopupMenu(service, folder.folders, folder.items, onDesktop, customSort))
+                menuItem.set_submenu(PopupMenu(service, folder.folders, folder.items, onDesktop))
                 menuItem.set_use_underline(True)
                 self.append(menuItem)
     
@@ -75,7 +71,7 @@ class PopupMenu(Gtk.Menu):
             # Create phrase folder section
             for folder in folders:
                 menuItem = Gtk.MenuItem(label=self.__getMnemonic(folder.title, onDesktop))
-                menuItem.set_submenu(PopupMenu(service, folder.folders, folder.items, False, customSort))
+                menuItem.set_submenu(PopupMenu(service, folder.folders, folder.items, False))
                 menuItem.set_use_underline(True)
                 self.append(menuItem)
     
@@ -110,11 +106,10 @@ class PopupMenu(Gtk.Menu):
         
     def __addItemsToSelf(self, items, service, onDesktop):
         # Create phrase section
-        if not self.customSort:
-            if cm.ConfigManager.SETTINGS[cm.SORT_BY_USAGE_COUNT]:
-                items.sort(key=lambda obj: obj.usageCount, reverse=True)
-            else:
-                items.sort(key=lambda obj: str(obj))
+        if cm.ConfigManager.SETTINGS[cm.SORT_BY_USAGE_COUNT]:
+            items.sort(key=lambda obj: obj.usageCount, reverse=True)
+        else:
+            items.sort(key=lambda obj: str(obj))
         
         i = 1
         for item in items:
