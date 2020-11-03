@@ -476,6 +476,7 @@ class ScriptPage:
 
         self.promptCheckbox.set_active(theScript.prompt)
         self.showInTrayCheckbox.set_active(theScript.show_in_tray_menu)
+        self.customSortForHotkey.set_active(theScript.custom_sort_for_hotkey)
         self.settingsWidget.load(theScript)
 
         if self.is_new_item():
@@ -489,6 +490,7 @@ class ScriptPage:
 
         self.currentItem.prompt = self.promptCheckbox.get_active()
         self.currentItem.show_in_tray_menu = self.showInTrayCheckbox.get_active()
+        self.currentItem.custom_sort_for_hotkey = self.customSortForHotkey.get_active()
 
         self.settingsWidget.save()
         self.currentItem.persist()
@@ -658,6 +660,7 @@ class PhrasePage(ScriptPage):
 
         self.promptCheckbox.set_active(thePhrase.prompt)
         self.showInTrayCheckbox.set_active(thePhrase.show_in_tray_menu)
+        self.customSortForHotkey.set_active(thePhrase.custom_sort_for_hotkey)
         self.settingsWidget.load(thePhrase)
 
         if self.is_new_item():
@@ -680,6 +683,7 @@ class PhrasePage(ScriptPage):
 
         self.currentItem.prompt = self.promptCheckbox.get_active()
         self.currentItem.show_in_tray_menu = self.showInTrayCheckbox.get_active()
+        self.currentItem.custom_sort_for_hotkey = self.customSortForHotkey.get_active()
         self.currentItem.sendMode = model.SEND_MODES[self.sendModeCombo.get_active_text()]
 
         self.settingsWidget.save()
