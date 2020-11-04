@@ -224,4 +224,3 @@ class Mouse:
 
         @param number: The number of times the scroll up signal will be fired.
         """
-        self.interface.scroll_up(number)
