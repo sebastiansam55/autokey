@@ -22,18 +22,23 @@ class AbstractWindowFilter:
     def __init__(self):
         self.windowInfoRegex = None
         self.isRecursive = False
+        self.ignore = False
 
     def get_serializable(self):
         if self.windowInfoRegex is not None:
-            return {"regex": self.windowInfoRegex.pattern, "isRecursive": self.isRecursive}
+            return {"regex": self.windowInfoRegex.pattern, "isRecursive": self.isRecursive, "ignore": self.ignore}
         else:
-            return {"regex": None, "isRecursive": False}
+            return {"regex": None, "isRecursive": False, "ignore": False}
 
     def load_from_serialized(self, data):
         try:
             if isinstance(data, dict): # check needed for data from versions < 0.80.4
                 self.set_window_titles(data["regex"])
                 self.isRecursive = data["isRecursive"]
+                try:
+                    self.ignore = data["ignore"]
+                except KeyError:
+                    self.ignore=False
             else:
                 self.set_window_titles(data)
         except re.error as e:
@@ -43,14 +48,16 @@ class AbstractWindowFilter:
         self.windowInfoRegex = window_filter.windowInfoRegex
         self.isRecursive = window_filter.isRecursive
 
-    def set_window_titles(self, regex):
+    def set_window_titles(self, regex, ignore=False):
         if regex is not None:
             try:
                 self.windowInfoRegex = re.compile(regex, re.UNICODE)
+                self.ignore = ignore
             except re.error as e:
                 raise e
         else:
             self.windowInfoRegex = regex
+            self.ignore = ignore
 
     def set_filter_recursive(self, recurse):
         self.isRecursive = recurse
@@ -64,6 +71,13 @@ class AbstractWindowFilter:
 
         return False
 
+    def get_ignore(self) -> bool:
+        if self.ignore:
+            return True
+        elif self.parent is not None:
+            return self.parent.get_child_ignore()
+        return False
+
     def get_child_filter(self):
         if self.isRecursive and self.windowInfoRegex is not None:
             return self.get_filter_regex()
@@ -71,6 +85,14 @@ class AbstractWindowFilter:
             return self.parent.get_child_filter()
         else:
             return ""
+
+    def get_child_ignore(self):
+        if self.isRecursive and self.ignore:
+            return True
+        elif self.parent is not None:
+            return self.parent.get_child_ignore()
+        else:
+            return False
 
     def get_filter_regex(self):
         """
@@ -110,6 +132,10 @@ class AbstractWindowFilter:
     def _should_trigger_window_title(self, window_info):
         r = self.get_applicable_regex()  # type: typing.Pattern
         if r is not None:
-            return bool(r.match(window_info.wm_title)) or bool(r.match(window_info.wm_class))
+            trigger = bool(r.match(window_info.wm_title)) or bool(r.match(window_info.wm_class))
+            if self.ignore:
+                return not trigger
+            else:
+                return trigger
         else:
             return True
