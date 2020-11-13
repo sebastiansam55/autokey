@@ -618,6 +618,7 @@ class WindowFilterSettingsDialog(DialogBase):
 
         self.triggerRegexEntry = builder.get_object("triggerRegexEntry")
         self.recursiveButton = builder.get_object("recursiveButton")
+        self.ignoreButton = builder.get_object("ignoreButton")
         self.detectButton = builder.get_object("detectButton")
 
         DialogBase.__init__(self)
@@ -635,12 +636,14 @@ class WindowFilterSettingsDialog(DialogBase):
         else:
             self.triggerRegexEntry.set_text(item.get_filter_regex())
             self.recursiveButton.set_active(item.isRecursive)
+            self.ignoreButton.set_active(item.ignore)
 
     # It seriously bugs me how much duplication there is between the two GUIs.
     def save(self, item):
         regex = self.get_filter_text()
+        ignore = self.get_ignore()
         try:
-            item.set_window_titles(regex)
+            item.set_window_titles(regex, ignore)
         except re.error:
             logger.error(
                 "Invalid window filter regex: '{}'. Discarding without saving.".format(regex)
@@ -650,12 +653,16 @@ class WindowFilterSettingsDialog(DialogBase):
     def reset(self):
         self.triggerRegexEntry.set_text("")
         self.recursiveButton.set_active(False)
+        self.ignoreButton.set_active(False)
 
     def get_filter_text(self):
         return self.triggerRegexEntry.get_text()
 
     def get_is_recursive(self):
         return self.recursiveButton.get_active()
+
+    def get_ignore(self):
+        return self.ignoreButton.get_active()
 
     def valid(self):
         return True
