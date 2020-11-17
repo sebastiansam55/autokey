@@ -22,6 +22,7 @@ This file centralises the public API classes for easier importing.
 import autokey.common
 
 from . import highlevel
+from . import visgrep
 
 from .common import ColourData, DialogData
 

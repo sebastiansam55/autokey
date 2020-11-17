@@ -471,6 +471,7 @@ class ScriptRunner:
         self.error_records = []  # type: typing.List[model.ScriptErrorRecord]
         self.scope = globals()
         self.scope["highlevel"] = autokey.scripting.highlevel
+        self.scope["visgrep"] = autokey.scripting.visgrep
         self.scope["keyboard"] = autokey.scripting.Keyboard(mediator)
         self.scope["mouse"] = autokey.scripting.Mouse(mediator)
         self.scope["system"] = autokey.scripting.System()
