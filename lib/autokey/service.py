@@ -171,6 +171,7 @@ class Service:
             if itemMatch is not None:
                 self.__tryReleaseLock()
                 self.__processItem(itemMatch)
+                self.configManager.lock.acquire()
 
 
             ### --- end of hotkey processing --- ###
@@ -199,6 +200,7 @@ class Service:
                     logger.info('Matched {} "{}" having abbreviations "{}" against current input'.format(
                         item.__class__.__name__, item.description, item.abbreviations))
                     self.__processItem(item, currentInput)
+                    self.configManager.lock.acquire()
                 elif menu:
                     if self.lastMenu is not None:
                         #self.lastMenu.remove_from_desktop()
