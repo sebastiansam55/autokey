@@ -249,3 +249,35 @@ class Window:
             return 1, 'ERROR: Please install wmctrl'
 
         return returncode, output
+
+    def get_window_list(self, filter_title="", filter_desktop=None):
+        """
+        Returns a list of windows matching an optional filter, requires C{wmctrl}!
+
+        Each list item consists of: C{[hexid, desktop, hostname, title]}
+
+        Where the C{hexid} is the ID used for some other functions (like L{import -window} from ImageMagick).
+
+        C{desktop} is the number of which desktop (sometimes called workspaces) the item appears upon.
+
+        C{hostname} is the hostname of your computer (I'm not sure why this is included as it seems to be the same for everything I have seen)
+        
+        C{title} is the title that you would usually see in your window manager of choice.
+
+        @param filter_title: String to filter the titles by, any window not containing the string will not be returned in the list
+        @param filter_desktop: String, (usually 0-n) to filter the windows by. Any window not on the given desktop will not be returned.
+        @return: C{[[hexid1, desktop1, hostname1, title1], [hexid2,desktop2,hostname2,title2], ...etc]}
+        """
+        windowList = self._run_wmctrl(["-l"])[1].split("\n")
+        output = []
+        for window in windowList:
+            if not filter_title in window:
+                continue
+            info = window.split("  ")[1] #the remaining information
+            hexid = window.split("  ")[0] #the hexid of the window
+            desktop, hostname, window_title = info.split(" ", 2)
+            if filter_desktop is not None:
+                if not filter_desktop==desktop:
+                    continue
+            output.append([hexid,desktop,hostname, window_title])
+        return output
