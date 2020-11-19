@@ -621,6 +621,7 @@ class XInterfaceBase(threading.Thread):
             logger.warning("Tried to backup the X clipboard content, but got None instead of a string.")
         self.clipboard.text = string
         try:
+            logger.debug("Pasting string via clipboard:"+ string)
             self.mediator.send_string(paste_command.value)
         finally:
             self.ungrab_keyboard()

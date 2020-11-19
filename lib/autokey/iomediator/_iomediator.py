@@ -220,6 +220,7 @@ class IoMediator(threading.Thread):
         Sends the given number of backspace key presses.
         """
         for i in range(count):
+            _logger.debug("Backspace "+str(i+1)+" for removing abbreviation enqueued")
             self.interface.send_key(Key.BACKSPACE)
 
     def flush(self):
