@@ -87,16 +87,11 @@ class Application:
         #modules specific to gtk
         gtk_modules = ['gi']
 
-
+        missing_modules = []
         for module in python_modules+modules+gtk_modules:
             spec = importlib.util.find_spec(module)
             if spec is None: #module has not been imported/found correctly
-                self.show_error_dialog("Python module: "+module+" has not been imported correctly",
-                    "This python module is required for AutoKey to function properly")
-                sys.exit("Missing python modules")
-            else: 
-                # print(spec)
-                pass
+                missing_modules.append(module)
 
         #test for if command line programs used by AutoKey are installed on the system
         # visgrep comes from xautomation
@@ -106,21 +101,44 @@ class Application:
 
         linux_programs = ['ps']
 
-        # programs = ['visgrep', 'import', 'png2pat', 'xte', 'wmctrl', 'xmousepos']
         programs = ['wmctrl']
 
         gtk_programs = ['zenity']
 
+        missing_programs = []
         for program in linux_programs+programs+gtk_programs:
             if which(program) is None:
                 # file not found by shell
-                self.show_error_dialog(program+" was not found installed on your system.",
-                    "This program is needed for autokey to function properly")
-                sys.exit("Missing command line program")
-            else:
-                #file was found fine.
-                pass
+                missing_programs.append(program)
 
+        missing_optional_programs = []
+        optional_programs = ['visgrep', 'import', 'png2pat', 'xte', 'wmctrl', 'xmousepos']
+        for program in optional_programs:
+            if which(program) is None:
+                missing_optional_programs.append(program)
+
+        if len(missing_programs)>0 or len(missing_modules)>0:
+            error_message = ""
+            for item in missing_programs:
+                error_message+= "Program: "+item+"\n"
+            for item in missing_modules:
+                error_message+= "Python Module: "+item+"\n"
+
+            #might not be required to enter and leave thread probably best practice to even tho the app exits immediately after.
+            Gdk.threads_enter()
+            self.show_error_dialog("AutoKey Requires the following programs or python modules to be installed to function properly", error_message)
+            Gdk.threads_leave()
+            sys.exit("missing programs or modules:\n"+str(missing_programs)+str(missing_modules))
+
+        if len(missing_optional_programs)>0:
+            error_message = ""
+            for item in missing_optional_programs:
+                error_message += "Program: "+item+"\n"
+
+            #entering and leaving thread appears to be required to not hang main window
+            Gdk.threads_enter()
+            self.show_warning_dialog("Some optional dependencies for AutoKey were not detected on your system", error_message)
+            Gdk.threads_leave()
 
         args = autokey.argument_parser.parse_args()
 
@@ -333,6 +351,17 @@ class Application:
         Convenience method for showing an error dialog.
         """
         dlg = Gtk.MessageDialog(type=Gtk.MessageType.ERROR, buttons=Gtk.ButtonsType.OK,
+                                 message_format=message)
+        if details is not None:
+            dlg.format_secondary_text(details)
+        dlg.run()
+        dlg.destroy()
+
+    def show_warning_dialog(self, message, details=None):
+        """
+        Another convenience method for showing info dialog
+        """
+        dlg = Gtk.MessageDialog(type=Gtk.MessageType.WARNING, buttons=Gtk.ButtonsType.OK,
                                  message_format=message)
         if details is not None:
             dlg.format_secondary_text(details)
