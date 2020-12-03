@@ -1695,6 +1695,7 @@ class AkTreeModel(Gtk.TreeStore):
 
     def __init__(self, folders):
         Gtk.TreeStore.__init__(self, str, str, str, str, object)
+        self.show_disabled = False
 
         for folder in folders:
             iterator = self.append(None, folder.get_tuple())
@@ -1710,7 +1711,14 @@ class AkTreeModel(Gtk.TreeStore):
             self.populate_store(iterator, folder)
 
         for item in parentFolder.items:
-            self.append(parent, item.get_tuple())
+            if self.show_disabled:
+                print(item)
+                self.append(parent, item.get_tuple())
+            else: #only show enabled items
+                if item.modes==[]:#no modes, is disabled
+                    pass
+                else:
+                    self.append(parent, item.get_tuple())
 
     def append_item(self, item, parentIter):
         if parentIter is None:
