@@ -1,0 +1,1499 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>autokey.scripting &mdash; AutoKey Main v0.95.10 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> AutoKey Main
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../intro.html">Introduction to Autokey</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api.html">Autokey API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quickstart.html">Quickstart</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">AutoKey Main</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+        
+      <li>autokey.scripting</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for autokey.scripting</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="c1"># Copyright (C) 2011 Chris Dekter</span>
+<span class="c1">#</span>
+<span class="c1"># This program is free software: you can redistribute it and/or modify</span>
+<span class="c1"># it under the terms of the GNU General Public License as published by</span>
+<span class="c1"># the Free Software Foundation, either version 3 of the License, or</span>
+<span class="c1"># (at your option) any later version.</span>
+<span class="c1">#</span>
+<span class="c1"># This program is distributed in the hope that it will be useful,</span>
+<span class="c1"># but WITHOUT ANY WARRANTY; without even the implied warranty of</span>
+<span class="c1"># MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the</span>
+<span class="c1"># GNU General Public License for more details.</span>
+<span class="c1">#</span>
+<span class="c1"># You should have received a copy of the GNU General Public License</span>
+<span class="c1"># along with this program.  If not, see &lt;http://www.gnu.org/licenses/&gt;.</span>
+
+<span class="kn">import</span> <span class="nn">subprocess</span>
+<span class="kn">import</span> <span class="nn">threading</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">NamedTuple</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">from</span> <span class="nn">autokey</span> <span class="kn">import</span> <span class="n">common</span><span class="p">,</span> <span class="n">model</span>
+<span class="kn">from</span> <span class="nn">autokey</span> <span class="kn">import</span> <span class="n">iomediator</span>
+
+<span class="k">if</span> <span class="n">common</span><span class="o">.</span><span class="n">USING_QT</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">PyQt5.QtGui</span> <span class="kn">import</span> <span class="n">QClipboard</span>
+    <span class="kn">from</span> <span class="nn">PyQt5.QtWidgets</span> <span class="kn">import</span> <span class="n">QApplication</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">gi.repository</span> <span class="kn">import</span> <span class="n">Gtk</span><span class="p">,</span> <span class="n">Gdk</span>
+
+
+<span class="k">class</span> <span class="nc">ColourData</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">(</span><span class="s2">&quot;ColourData&quot;</span><span class="p">,</span> <span class="p">((</span><span class="s2">&quot;r&quot;</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;g&quot;</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="nb">int</span><span class="p">)))):</span>
+    <span class="sd">&quot;&quot;&quot;Colour data type for colour chooser dialogs.&quot;&quot;&quot;</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">hex_code</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{0:02x}{1:02x}{2:02x}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">r</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">g</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">html_code</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Converts the ColourData into a HTML-style colour, equivalent to the KDialog output.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;#&quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">hex_code</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">zenity_tuple_str</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Converts the ColourData into a tuple-like string, equivalent to the Zenity output. (&quot;rgb(R, G, B)&quot;)&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot;rgb(</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span><span class="bp">self</span><span class="p">)))</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_html</span><span class="p">(</span><span class="n">html_style_colour_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parser for KDialog output, which outputs a HTML style hex code like #55aa00</span>
+<span class="sd">        @param html_style_colour_str: HTML style hex string encoded colour. (#rrggbb)</span>
+<span class="sd">        @return: ColourData instance</span>
+<span class="sd">        @rtype: ColourData</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">html_style_colour_str</span> <span class="o">=</span> <span class="n">html_style_colour_str</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">&quot;#&quot;</span><span class="p">)</span>
+        <span class="n">components</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">,</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="p">[</span><span class="nb">iter</span><span class="p">(</span><span class="n">html_style_colour_str</span><span class="p">)]</span><span class="o">*</span><span class="mi">2</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="n">ColourData</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">colour</span><span class="p">,</span> <span class="mi">16</span><span class="p">)</span> <span class="k">for</span> <span class="n">colour</span> <span class="ow">in</span> <span class="n">components</span><span class="p">))</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">from_zenity_tuple_str</span><span class="p">(</span><span class="n">zenity_tuple_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parser for Zenity output, which outputs a named tuple-like string: &quot;rgb(R, G, B)&quot;, where R, G, B are base10</span>
+<span class="sd">        integers.</span>
+<span class="sd">        @param zenity_tuple_str: tuple-like string: &quot;rgb(r, g, b), where r, g, b are base10 integers.</span>
+<span class="sd">        @return: ColourData instance</span>
+<span class="sd">        @rtype: ColourData</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">components</span> <span class="o">=</span> <span class="n">zenity_tuple_str</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;rgb()&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ColourData</span><span class="p">(</span><span class="o">*</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">components</span><span class="p">))</span>
+
+
+<span class="k">class</span> <span class="nc">DialogData</span><span class="p">(</span><span class="n">NamedTuple</span><span class="p">(</span><span class="s2">&quot;DialogData&quot;</span><span class="p">,</span> <span class="p">((</span><span class="s2">&quot;return_code&quot;</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> <span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="n">ColourData</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="kc">None</span><span class="p">])))):</span>
+    <span class="sd">&quot;&quot;&quot;&quot;&quot;&quot;</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">successful</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns True, if the dialog execution was successful, i.e. KDialog or Zenity exited with a zero return value.</span>
+<span class="sd">        This includes:</span>
+<span class="sd">        - Command line parameters are correct</span>
+<span class="sd">        - Execution is otherwise successful (Can open X Display, load shared libraries, etc.)</span>
+<span class="sd">        - The user clicked on OK or otherwise &#39;accepted&#39; the dialog.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">return_code</span> <span class="o">==</span> <span class="mi">0</span>
+
+
+<div class="viewcode-block" id="Keyboard"><a class="viewcode-back" href="../../api/keyboard.html#autokey.scripting.Keyboard">[docs]</a><span class="k">class</span> <span class="nc">Keyboard</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Provides access to the keyboard for event generation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mediator</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mediator</span> <span class="o">=</span> <span class="n">mediator</span>
+        
+<div class="viewcode-block" id="Keyboard.send_keys"><a class="viewcode-back" href="../../api/keyboard.html#autokey.scripting.Keyboard.send_keys">[docs]</a>    <span class="k">def</span> <span class="nf">send_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">keyString</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Send a sequence of keys via keyboard events</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{keyboard.send_keys(keyString)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param keyString: string of keys (including special keys) to send</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">assert</span> <span class="nb">type</span><span class="p">(</span><span class="n">keyString</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">str</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mediator</span><span class="o">.</span><span class="n">interface</span><span class="o">.</span><span class="n">begin_send</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mediator</span><span class="o">.</span><span class="n">send_string</span><span class="p">(</span><span class="n">keyString</span><span class="p">)</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mediator</span><span class="o">.</span><span class="n">interface</span><span class="o">.</span><span class="n">finish_send</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="Keyboard.send_key"><a class="viewcode-back" href="../../api/keyboard.html#autokey.scripting.Keyboard.send_key">[docs]</a>    <span class="k">def</span> <span class="nf">send_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Send a keyboard event</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{keyboard.send_key(key, repeat=1)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param key: they key to be sent (e.g. &quot;s&quot; or &quot;&lt;enter&gt;&quot;)</span>
+<span class="sd">        @param repeat: number of times to repeat the key event</span>
+<span class="sd">        &quot;&quot;&quot;</span>        
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">repeat</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mediator</span><span class="o">.</span><span class="n">send_key</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mediator</span><span class="o">.</span><span class="n">flush</span><span class="p">()</span></div>
+        
+<div class="viewcode-block" id="Keyboard.press_key"><a class="viewcode-back" href="../../api/keyboard.html#autokey.scripting.Keyboard.press_key">[docs]</a>    <span class="k">def</span> <span class="nf">press_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Send a key down event</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{keyboard.press_key(key)}</span>
+<span class="sd">        </span>
+<span class="sd">        The key will be treated as down until a matching release_key() is sent.</span>
+<span class="sd">        @param key: they key to be pressed (e.g. &quot;s&quot; or &quot;&lt;enter&gt;&quot;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mediator</span><span class="o">.</span><span class="n">press_key</span><span class="p">(</span><span class="n">key</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="Keyboard.release_key"><a class="viewcode-back" href="../../api/keyboard.html#autokey.scripting.Keyboard.release_key">[docs]</a>    <span class="k">def</span> <span class="nf">release_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Send a key up event</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{keyboard.release_key(key)}</span>
+<span class="sd">        </span>
+<span class="sd">        If the specified key was not made down using press_key(), the event will be </span>
+<span class="sd">        ignored.</span>
+<span class="sd">        @param key: they key to be released (e.g. &quot;s&quot; or &quot;&lt;enter&gt;&quot;)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mediator</span><span class="o">.</span><span class="n">release_key</span><span class="p">(</span><span class="n">key</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Keyboard.fake_keypress"><a class="viewcode-back" href="../../api/keyboard.html#autokey.scripting.Keyboard.fake_keypress">[docs]</a>    <span class="k">def</span> <span class="nf">fake_keypress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">repeat</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fake a keypress</span>
+
+<span class="sd">        Usage: C{keyboard.fake_keypress(key, repeat=1)}</span>
+
+<span class="sd">        Uses XTest to &#39;fake&#39; a keypress. This is useful to send keypresses to some</span>
+<span class="sd">        applications which won&#39;t respond to keyboard.send_key()</span>
+
+<span class="sd">        @param key: they key to be sent (e.g. &quot;s&quot; or &quot;&lt;enter&gt;&quot;)</span>
+<span class="sd">        @param repeat: number of times to repeat the key event</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">repeat</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">mediator</span><span class="o">.</span><span class="n">fake_keypress</span><span class="p">(</span><span class="n">key</span><span class="p">)</span></div>
+            
+<div class="viewcode-block" id="Keyboard.wait_for_keypress"><a class="viewcode-back" href="../../api/keyboard.html#autokey.scripting.Keyboard.wait_for_keypress">[docs]</a>    <span class="k">def</span> <span class="nf">wait_for_keypress</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">modifiers</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">timeOut</span><span class="o">=</span><span class="mf">10.0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Wait for a keypress or key combination</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{keyboard.wait_for_keypress(self, key, modifiers=[], timeOut=10.0)}</span>
+<span class="sd">        </span>
+<span class="sd">        Note: this function cannot be used to wait for modifier keys on their own</span>
+
+<span class="sd">        @param key: they key to wait for</span>
+<span class="sd">        @param modifiers: list of modifiers that should be pressed with the key</span>
+<span class="sd">        @param timeOut: maximum time, in seconds, to wait for the keypress to occur</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">modifiers</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">modifiers</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">iomediator</span><span class="o">.</span><span class="n">Waiter</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">modifiers</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">timeOut</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">w</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span></div></div>
+        
+
+<div class="viewcode-block" id="Mouse"><a class="viewcode-back" href="../../api/mouse.html#autokey.scripting.Mouse">[docs]</a><span class="k">class</span> <span class="nc">Mouse</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Provides access to send mouse clicks</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mediator</span><span class="p">:</span> <span class="n">iomediator</span><span class="o">.</span><span class="n">IoMediator</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mediator</span> <span class="o">=</span> <span class="n">mediator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interface</span> <span class="o">=</span> <span class="n">mediator</span><span class="o">.</span><span class="n">interface</span>
+    
+<div class="viewcode-block" id="Mouse.click_relative"><a class="viewcode-back" href="../../api/mouse.html#autokey.scripting.Mouse.click_relative">[docs]</a>    <span class="k">def</span> <span class="nf">click_relative</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">button</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Send a mouse click relative to the active window</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{mouse.click_relative(x, y, button)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param x: x-coordinate in pixels, relative to upper left corner of window</span>
+<span class="sd">        @param y: y-coordinate in pixels, relative to upper left corner of window</span>
+<span class="sd">        @param button: mouse button to simulate (left=1, middle=2, right=3)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interface</span><span class="o">.</span><span class="n">send_mouse_click</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">button</span><span class="p">,</span> <span class="kc">True</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="Mouse.click_relative_self"><a class="viewcode-back" href="../../api/mouse.html#autokey.scripting.Mouse.click_relative_self">[docs]</a>    <span class="k">def</span> <span class="nf">click_relative_self</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">button</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Send a mouse click relative to the current mouse position</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{mouse.click_relative_self(x, y, button)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param x: x-offset in pixels, relative to current mouse position</span>
+<span class="sd">        @param y: y-offset in pixels, relative to current mouse position</span>
+<span class="sd">        @param button: mouse button to simulate (left=1, middle=2, right=3)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interface</span><span class="o">.</span><span class="n">send_mouse_click_relative</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">button</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="Mouse.click_absolute"><a class="viewcode-back" href="../../api/mouse.html#autokey.scripting.Mouse.click_absolute">[docs]</a>    <span class="k">def</span> <span class="nf">click_absolute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">button</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Send a mouse click relative to the screen (absolute)</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{mouse.click_absolute(x, y, button)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param x: x-coordinate in pixels, relative to upper left corner of window</span>
+<span class="sd">        @param y: y-coordinate in pixels, relative to upper left corner of window</span>
+<span class="sd">        @param button: mouse button to simulate (left=1, middle=2, right=3)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interface</span><span class="o">.</span><span class="n">send_mouse_click</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">button</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="Mouse.wait_for_click"><a class="viewcode-back" href="../../api/mouse.html#autokey.scripting.Mouse.wait_for_click">[docs]</a>    <span class="k">def</span> <span class="nf">wait_for_click</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">button</span><span class="p">,</span> <span class="n">timeOut</span><span class="o">=</span><span class="mf">10.0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Wait for a mouse click</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{mouse.wait_for_click(self, button, timeOut=10.0)}</span>
+
+<span class="sd">        @param button: they mouse button click to wait for as a button number, 1-9</span>
+<span class="sd">        @param timeOut: maximum time, in seconds, to wait for the keypress to occur</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">button</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">button</span><span class="p">)</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">iomediator</span><span class="o">.</span><span class="n">Waiter</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">button</span><span class="p">,</span> <span class="n">timeOut</span><span class="p">)</span>
+        <span class="n">w</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="QtDialog"><a class="viewcode-back" href="../../api/qtdialog.html#autokey.scripting.QtDialog">[docs]</a><span class="k">class</span> <span class="nc">QtDialog</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Provides a simple interface for the display of some basic dialogs to collect information from the user.</span>
+<span class="sd">    </span>
+<span class="sd">    This version uses KDialog to integrate well with KDE. To pass additional arguments to KDialog that are </span>
+<span class="sd">    not specifically handled, use keyword arguments. For example, to pass the --geometry argument to KDialog</span>
+<span class="sd">    to specify the desired size of the dialog, pass C{geometry=&quot;700x400&quot;} as one of the parameters. All</span>
+<span class="sd">    keyword arguments must be given as strings.</span>
+
+<span class="sd">    A note on exit codes: an exit code of 0 indicates that the user clicked OK.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">_run_kdialog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DialogData</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;--&quot;</span> <span class="o">+</span> <span class="n">k</span><span class="p">)</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span>
+                <span class="p">[</span><span class="s2">&quot;kdialog&quot;</span><span class="p">,</span> <span class="s2">&quot;--title&quot;</span><span class="p">,</span> <span class="n">title</span><span class="p">]</span> <span class="o">+</span> <span class="n">args</span><span class="p">,</span>
+                <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                <span class="n">universal_newlines</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">p</span><span class="p">:</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">communicate</span><span class="p">()[</span><span class="mi">0</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># type: str # Drop trailing newline</span>
+            <span class="n">return_code</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">returncode</span>
+        
+        <span class="k">return</span> <span class="n">DialogData</span><span class="p">(</span><span class="n">return_code</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+
+<div class="viewcode-block" id="QtDialog.info_dialog"><a class="viewcode-back" href="../../api/qtdialog.html#autokey.scripting.QtDialog.info_dialog">[docs]</a>    <span class="k">def</span> <span class="nf">info_dialog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Information&quot;</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Show an information dialog</span>
+
+<span class="sd">        Usage: C{dialog.info_dialog(title=&quot;Information&quot;, message=&quot;&quot;, **kwargs)}</span>
+
+<span class="sd">        @param title: window title for the dialog</span>
+<span class="sd">        @param message: message displayed in the dialog</span>
+<span class="sd">        @return: a tuple containing the exit code and user input</span>
+<span class="sd">        @rtype: C{DialogData(int, str)}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_kdialog</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;--msgbox&quot;</span><span class="p">,</span> <span class="n">message</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="QtDialog.input_dialog"><a class="viewcode-back" href="../../api/qtdialog.html#autokey.scripting.QtDialog.input_dialog">[docs]</a>    <span class="k">def</span> <span class="nf">input_dialog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Enter a value&quot;</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Enter a value&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Show an input dialog</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{dialog.input_dialog(title=&quot;Enter a value&quot;, message=&quot;Enter a value&quot;, default=&quot;&quot;, **kwargs)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param title: window title for the dialog</span>
+<span class="sd">        @param message: message displayed above the input box</span>
+<span class="sd">        @param default: default value for the input box</span>
+<span class="sd">        @return: a tuple containing the exit code and user input</span>
+<span class="sd">        @rtype: C{DialogData(int, str)}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_kdialog</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;--inputbox&quot;</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="n">default</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="QtDialog.password_dialog"><a class="viewcode-back" href="../../api/qtdialog.html#autokey.scripting.QtDialog.password_dialog">[docs]</a>    <span class="k">def</span> <span class="nf">password_dialog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Enter password&quot;</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Enter password&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Show a password input dialog</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{dialog.password_dialog(title=&quot;Enter password&quot;, message=&quot;Enter password&quot;, **kwargs)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param title: window title for the dialog</span>
+<span class="sd">        @param message: message displayed above the password input box</span>
+<span class="sd">        @return: a tuple containing the exit code and user input</span>
+<span class="sd">        @rtype: C{DialogData(int, str)}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_kdialog</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;--password&quot;</span><span class="p">,</span> <span class="n">message</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="QtDialog.combo_menu"><a class="viewcode-back" href="../../api/qtdialog.html#autokey.scripting.QtDialog.combo_menu">[docs]</a>    <span class="k">def</span> <span class="nf">combo_menu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Choose an option&quot;</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Choose an option&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Show a combobox menu</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{dialog.combo_menu(options, title=&quot;Choose an option&quot;, message=&quot;Choose an option&quot;, **kwargs)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param options: list of options (strings) for the dialog</span>
+<span class="sd">        @param title: window title for the dialog</span>
+<span class="sd">        @param message: message displayed above the combobox</span>
+<span class="sd">        @return: a tuple containing the exit code and user choice</span>
+<span class="sd">        @rtype: C{DialogData(int, str)}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_kdialog</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;--combobox&quot;</span><span class="p">,</span> <span class="n">message</span><span class="p">]</span> <span class="o">+</span> <span class="n">options</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="QtDialog.list_menu"><a class="viewcode-back" href="../../api/qtdialog.html#autokey.scripting.QtDialog.list_menu">[docs]</a>    <span class="k">def</span> <span class="nf">list_menu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Choose a value&quot;</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Choose a value&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Show a single-selection list menu</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{dialog.list_menu(options, title=&quot;Choose a value&quot;, message=&quot;Choose a value&quot;, default=None, **kwargs)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param options: list of options (strings) for the dialog</span>
+<span class="sd">        @param title: window title for the dialog</span>
+<span class="sd">        @param message: message displayed above the list</span>
+<span class="sd">        @param default: default value to be selected</span>
+<span class="sd">        @return: a tuple containing the exit code and user choice</span>
+<span class="sd">        @rtype: C{DialogData(int, str)}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">choices</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">optionNum</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+            <span class="n">choices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">optionNum</span><span class="p">))</span>
+            <span class="n">choices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">option</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">option</span> <span class="o">==</span> <span class="n">default</span><span class="p">:</span>
+                <span class="n">choices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;on&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">choices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
+            <span class="n">optionNum</span> <span class="o">+=</span> <span class="mi">1</span>
+            
+        <span class="n">return_code</span><span class="p">,</span> <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_kdialog</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;--radiolist&quot;</span><span class="p">,</span> <span class="n">message</span><span class="p">]</span> <span class="o">+</span> <span class="n">choices</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">choice</span> <span class="o">=</span> <span class="n">options</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">result</span><span class="p">)]</span>
+        
+        <span class="k">return</span> <span class="n">DialogData</span><span class="p">(</span><span class="n">return_code</span><span class="p">,</span> <span class="n">choice</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="QtDialog.list_menu_multi"><a class="viewcode-back" href="../../api/qtdialog.html#autokey.scripting.QtDialog.list_menu_multi">[docs]</a>    <span class="k">def</span> <span class="nf">list_menu_multi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Choose one or more values&quot;</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Choose one or more values&quot;</span><span class="p">,</span>
+                        <span class="n">defaults</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Show a multiple-selection list menu</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{dialog.list_menu_multi(options, title=&quot;Choose one or more values&quot;, message=&quot;Choose one or more values&quot;, defaults=[], **kwargs)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param options: list of options (strings) for the dialog</span>
+<span class="sd">        @param title: window title for the dialog</span>
+<span class="sd">        @param message: message displayed above the list</span>
+<span class="sd">        @param defaults: list of default values to be selected</span>
+<span class="sd">        @return: a tuple containing the exit code and user choice</span>
+<span class="sd">        @rtype: C{DialogData(int, List[str])}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">defaults</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">defaults</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">choices</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">optionNum</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+            <span class="n">choices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">optionNum</span><span class="p">))</span>
+            <span class="n">choices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">option</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">defaults</span><span class="p">:</span>
+                <span class="n">choices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;on&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">choices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;off&quot;</span><span class="p">)</span>
+            <span class="n">optionNum</span> <span class="o">+=</span> <span class="mi">1</span>
+            
+        <span class="n">return_code</span><span class="p">,</span> <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_kdialog</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;--separate-output&quot;</span><span class="p">,</span> <span class="s2">&quot;--checklist&quot;</span><span class="p">,</span> <span class="n">message</span><span class="p">]</span> <span class="o">+</span> <span class="n">choices</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+
+        <span class="n">choices</span> <span class="o">=</span> <span class="p">[</span><span class="n">options</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">choice_index</span><span class="p">)]</span> <span class="k">for</span> <span class="n">choice_index</span> <span class="ow">in</span> <span class="n">results</span><span class="p">]</span>
+        
+        <span class="k">return</span> <span class="n">DialogData</span><span class="p">(</span><span class="n">return_code</span><span class="p">,</span> <span class="n">choices</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="QtDialog.open_file"><a class="viewcode-back" href="../../api/qtdialog.html#autokey.scripting.QtDialog.open_file">[docs]</a>    <span class="k">def</span> <span class="nf">open_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Open File&quot;</span><span class="p">,</span> <span class="n">initialDir</span><span class="o">=</span><span class="s2">&quot;~&quot;</span><span class="p">,</span> <span class="n">fileTypes</span><span class="o">=</span><span class="s2">&quot;*|All Files&quot;</span><span class="p">,</span> <span class="n">rememberAs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Show an Open File dialog</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{dialog.open_file(title=&quot;Open File&quot;, initialDir=&quot;~&quot;, fileTypes=&quot;*|All Files&quot;, rememberAs=None, **kwargs)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param title: window title for the dialog</span>
+<span class="sd">        @param initialDir: starting directory for the file dialog</span>
+<span class="sd">        @param fileTypes: file type filter expression</span>
+<span class="sd">        @param rememberAs: gives an ID to this file dialog, allowing it to open at the last used path next time</span>
+<span class="sd">        @return: a tuple containing the exit code and file path</span>
+<span class="sd">        @rtype: C{DialogData(int, str)}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">rememberAs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_kdialog</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;--getopenfilename&quot;</span><span class="p">,</span> <span class="n">initialDir</span><span class="p">,</span> <span class="n">fileTypes</span><span class="p">,</span> <span class="s2">&quot;:&quot;</span> <span class="o">+</span> <span class="n">rememberAs</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_kdialog</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;--getopenfilename&quot;</span><span class="p">,</span> <span class="n">initialDir</span><span class="p">,</span> <span class="n">fileTypes</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="QtDialog.save_file"><a class="viewcode-back" href="../../api/qtdialog.html#autokey.scripting.QtDialog.save_file">[docs]</a>    <span class="k">def</span> <span class="nf">save_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Save As&quot;</span><span class="p">,</span> <span class="n">initialDir</span><span class="o">=</span><span class="s2">&quot;~&quot;</span><span class="p">,</span> <span class="n">fileTypes</span><span class="o">=</span><span class="s2">&quot;*|All Files&quot;</span><span class="p">,</span> <span class="n">rememberAs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Show a Save As dialog</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{dialog.save_file(title=&quot;Save As&quot;, initialDir=&quot;~&quot;, fileTypes=&quot;*|All Files&quot;, rememberAs=None, **kwargs)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param title: window title for the dialog</span>
+<span class="sd">        @param initialDir: starting directory for the file dialog</span>
+<span class="sd">        @param fileTypes: file type filter expression</span>
+<span class="sd">        @param rememberAs: gives an ID to this file dialog, allowing it to open at the last used path next time</span>
+<span class="sd">        @return: a tuple containing the exit code and file path</span>
+<span class="sd">        @rtype: C{DialogData(int, str)}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">rememberAs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_kdialog</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;--getsavefilename&quot;</span><span class="p">,</span> <span class="n">initialDir</span><span class="p">,</span> <span class="n">fileTypes</span><span class="p">,</span> <span class="s2">&quot;:&quot;</span> <span class="o">+</span> <span class="n">rememberAs</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_kdialog</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;--getsavefilename&quot;</span><span class="p">,</span> <span class="n">initialDir</span><span class="p">,</span> <span class="n">fileTypes</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="QtDialog.choose_directory"><a class="viewcode-back" href="../../api/qtdialog.html#autokey.scripting.QtDialog.choose_directory">[docs]</a>    <span class="k">def</span> <span class="nf">choose_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Select Directory&quot;</span><span class="p">,</span> <span class="n">initialDir</span><span class="o">=</span><span class="s2">&quot;~&quot;</span><span class="p">,</span> <span class="n">rememberAs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Show a Directory Chooser dialog</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{dialog.choose_directory(title=&quot;Select Directory&quot;, initialDir=&quot;~&quot;, rememberAs=None, **kwargs)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param title: window title for the dialog</span>
+<span class="sd">        @param initialDir: starting directory for the directory chooser dialog</span>
+<span class="sd">        @param rememberAs: gives an ID to this file dialog, allowing it to open at the last used path next time</span>
+<span class="sd">        @return: a tuple containing the exit code and chosen path</span>
+<span class="sd">        @rtype: C{DialogData(int, str)}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">rememberAs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_kdialog</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;--getexistingdirectory&quot;</span><span class="p">,</span> <span class="n">initialDir</span><span class="p">,</span> <span class="s2">&quot;:&quot;</span> <span class="o">+</span> <span class="n">rememberAs</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_kdialog</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;--getexistingdirectory&quot;</span><span class="p">,</span> <span class="n">initialDir</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="QtDialog.choose_colour"><a class="viewcode-back" href="../../api/qtdialog.html#autokey.scripting.QtDialog.choose_colour">[docs]</a>    <span class="k">def</span> <span class="nf">choose_colour</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Select Colour&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Show a Colour Chooser dialog</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{dialog.choose_colour(title=&quot;Select Colour&quot;)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param title: window title for the dialog</span>
+<span class="sd">        @return: a tuple containing the exit code and colour</span>
+<span class="sd">        @rtype: C{DialogData(int, str)}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">return_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_kdialog</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;--getcolor&quot;</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">return_data</span><span class="o">.</span><span class="n">successful</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">DialogData</span><span class="p">(</span><span class="n">return_data</span><span class="o">.</span><span class="n">return_code</span><span class="p">,</span> <span class="n">ColourData</span><span class="o">.</span><span class="n">from_html</span><span class="p">(</span><span class="n">return_data</span><span class="o">.</span><span class="n">data</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">DialogData</span><span class="p">(</span><span class="n">return_data</span><span class="o">.</span><span class="n">return_code</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="QtDialog.calendar"><a class="viewcode-back" href="../../api/qtdialog.html#autokey.scripting.QtDialog.calendar">[docs]</a>    <span class="k">def</span> <span class="nf">calendar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Choose a date&quot;</span><span class="p">,</span> <span class="n">format_str</span><span class="o">=</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">date</span><span class="o">=</span><span class="s2">&quot;today&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Show a calendar dialog</span>
+
+<span class="sd">        Usage: C{dialog.calendar_dialog(title=&quot;Choose a date&quot;, format=&quot;%Y-%m-%d&quot;, date=&quot;YYYY-MM-DD&quot;, **kwargs)}</span>
+
+<span class="sd">        Note: the format and date parameters are not currently used</span>
+
+<span class="sd">        @param title: window title for the dialog</span>
+<span class="sd">        @param format_str: format of date to be returned</span>
+<span class="sd">        @param date: initial date as YYYY-MM-DD, otherwise today</span>
+<span class="sd">        @return: a tuple containing the exit code and date</span>
+<span class="sd">        @rtype: C{DialogData(int, str)}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_kdialog</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;--calendar&quot;</span><span class="p">,</span> <span class="n">title</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">)</span></div></div>
+        
+        
+<div class="viewcode-block" id="System"><a class="viewcode-back" href="../../api/system.html#autokey.scripting.System">[docs]</a><span class="k">class</span> <span class="nc">System</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Simplified access to some system commands.</span>
+<span class="sd">    &quot;&quot;&quot;</span>    
+    
+<div class="viewcode-block" id="System.exec_command"><a class="viewcode-back" href="../../api/system.html#autokey.scripting.System.exec_command">[docs]</a>    <span class="k">def</span> <span class="nf">exec_command</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">command</span><span class="p">,</span> <span class="n">getOutput</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Execute a shell command</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{system.exec_command(command, getOutput=True)}</span>
+
+<span class="sd">        Set getOutput to False if the command does not exit and return immediately. Otherwise</span>
+<span class="sd">        AutoKey will not respond to any hotkeys/abbreviations etc until the process started</span>
+<span class="sd">        by the command exits.</span>
+<span class="sd">        </span>
+<span class="sd">        @param command: command to be executed (including any arguments) - e.g. &quot;ls -l&quot;</span>
+<span class="sd">        @param getOutput: whether to capture the (stdout) output of the command</span>
+<span class="sd">        @raise subprocess.CalledProcessError: if the command returns a non-zero exit code</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">getOutput</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span>
+                    <span class="n">command</span><span class="p">,</span>
+                    <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                    <span class="n">bufsize</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+                    <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                    <span class="n">universal_newlines</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">p</span><span class="p">:</span>
+                <span class="n">output</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">communicate</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">output</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">):</span>
+                    <span class="c1"># Most shell output has a new line at the end, which we</span>
+                    <span class="c1"># don&#39;t want. Drop the trailing newline character,</span>
+                    <span class="c1"># if the command output something that ends on &quot;\n&quot;</span>
+                    <span class="n">output</span> <span class="o">=</span> <span class="n">output</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">returncode</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CalledProcessError</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">returncode</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+                <span class="k">return</span> <span class="n">output</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span><span class="n">command</span><span class="p">,</span> <span class="n">shell</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">bufsize</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span></div>
+    
+<div class="viewcode-block" id="System.create_file"><a class="viewcode-back" href="../../api/system.html#autokey.scripting.System.create_file">[docs]</a>    <span class="k">def</span> <span class="nf">create_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fileName</span><span class="p">,</span> <span class="n">contents</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a file with contents</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{system.create_file(fileName, contents=&quot;&quot;)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param fileName: full path to the file to be created</span>
+<span class="sd">        @param contents: contents to insert into the file</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">fileName</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">written_file</span><span class="p">:</span>
+            <span class="n">written_file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">contents</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="GtkDialog"><a class="viewcode-back" href="../../api/gtkdialog.html#autokey.scripting.GtkDialog">[docs]</a><span class="k">class</span> <span class="nc">GtkDialog</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Provides a simple interface for the display of some basic dialogs to collect information from the user.</span>
+<span class="sd">    </span>
+<span class="sd">    This version uses Zenity to integrate well with GNOME. To pass additional arguments to Zenity that are </span>
+<span class="sd">    not specifically handled, use keyword arguments. For example, to pass the --timeout argument to Zenity</span>
+<span class="sd">    pass C{timeout=&quot;15&quot;} as one of the parameters. All keyword arguments must be given as strings.</span>
+
+<span class="sd">    A note on exit codes: an exit code of 0 indicates that the user clicked OK.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="nf">_run_zenity</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DialogData</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;--&quot;</span> <span class="o">+</span> <span class="n">k</span><span class="p">)</span>
+            <span class="n">args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+        <span class="k">with</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">(</span>
+                        <span class="p">[</span><span class="s2">&quot;zenity&quot;</span><span class="p">,</span> <span class="s2">&quot;--title&quot;</span><span class="p">,</span> <span class="n">title</span><span class="p">]</span> <span class="o">+</span> <span class="n">args</span><span class="p">,</span>
+                        <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">,</span>
+                        <span class="n">universal_newlines</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">as</span> <span class="n">p</span><span class="p">:</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">communicate</span><span class="p">()[</span><span class="mi">0</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># type: str # Drop trailing newline</span>
+            <span class="n">return_code</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">returncode</span>
+
+        <span class="k">return</span> <span class="n">DialogData</span><span class="p">(</span><span class="n">return_code</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+    
+<div class="viewcode-block" id="GtkDialog.info_dialog"><a class="viewcode-back" href="../../api/gtkdialog.html#autokey.scripting.GtkDialog.info_dialog">[docs]</a>    <span class="k">def</span> <span class="nf">info_dialog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Information&quot;</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Show an information dialog</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{dialog.info_dialog(title=&quot;Information&quot;, message=&quot;&quot;, **kwargs)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param title: window title for the dialog</span>
+<span class="sd">        @param message: message displayed in the dialog</span>
+<span class="sd">        @return: a tuple containing the exit code and user input</span>
+<span class="sd">        @rtype: C{tuple(int, str)}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_zenity</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;--info&quot;</span><span class="p">,</span> <span class="s2">&quot;--text&quot;</span><span class="p">,</span> <span class="n">message</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="GtkDialog.input_dialog"><a class="viewcode-back" href="../../api/gtkdialog.html#autokey.scripting.GtkDialog.input_dialog">[docs]</a>    <span class="k">def</span> <span class="nf">input_dialog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Enter a value&quot;</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Enter a value&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Show an input dialog</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{dialog.input_dialog(title=&quot;Enter a value&quot;, message=&quot;Enter a value&quot;, default=&quot;&quot;, **kwargs)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param title: window title for the dialog</span>
+<span class="sd">        @param message: message displayed above the input box</span>
+<span class="sd">        @param default: default value for the input box</span>
+<span class="sd">        @return: a tuple containing the exit code and user input</span>
+<span class="sd">        @rtype: C{DialogData(int, str)}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_zenity</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;--entry&quot;</span><span class="p">,</span> <span class="s2">&quot;--text&quot;</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="s2">&quot;--entry-text&quot;</span><span class="p">,</span> <span class="n">default</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="GtkDialog.password_dialog"><a class="viewcode-back" href="../../api/gtkdialog.html#autokey.scripting.GtkDialog.password_dialog">[docs]</a>    <span class="k">def</span> <span class="nf">password_dialog</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Enter password&quot;</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Enter password&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Show a password input dialog</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{dialog.password_dialog(title=&quot;Enter password&quot;, message=&quot;Enter password&quot;)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param title: window title for the dialog</span>
+<span class="sd">        @param message: message displayed above the password input box</span>
+<span class="sd">        @return: a tuple containing the exit code and user input</span>
+<span class="sd">        @rtype: C{DialogData(int, str)}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_zenity</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;--entry&quot;</span><span class="p">,</span> <span class="s2">&quot;--text&quot;</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="s2">&quot;--hide-text&quot;</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">)</span>
+        
+    <span class="c1">#def combo_menu(self, options, title=&quot;Choose an option&quot;, message=&quot;Choose an option&quot;):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Show a combobox menu - not supported by zenity</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{dialog.combo_menu(options, title=&quot;Choose an option&quot;, message=&quot;Choose an option&quot;)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param options: list of options (strings) for the dialog</span>
+<span class="sd">        @param title: window title for the dialog</span>
+<span class="sd">        @param message: message displayed above the combobox      </span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+        <span class="c1">#return self._run_zenity(title, [&quot;--combobox&quot;, message] + options)</span>
+        
+<div class="viewcode-block" id="GtkDialog.list_menu"><a class="viewcode-back" href="../../api/gtkdialog.html#autokey.scripting.GtkDialog.list_menu">[docs]</a>    <span class="k">def</span> <span class="nf">list_menu</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Choose a value&quot;</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Choose a value&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Show a single-selection list menu</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{dialog.list_menu(options, title=&quot;Choose a value&quot;, message=&quot;Choose a value&quot;, default=None, **kwargs)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param options: list of options (strings) for the dialog</span>
+<span class="sd">        @param title: window title for the dialog</span>
+<span class="sd">        @param message: message displayed above the list</span>
+<span class="sd">        @param default: default value to be selected</span>
+<span class="sd">        @return: a tuple containing the exit code and user choice</span>
+<span class="sd">        @rtype: C{DialogData(int, str)}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        
+        <span class="n">choices</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">option</span> <span class="o">==</span> <span class="n">default</span><span class="p">:</span>
+                <span class="n">choices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;TRUE&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">choices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;FALSE&quot;</span><span class="p">)</span>
+                
+            <span class="n">choices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">option</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_zenity</span><span class="p">(</span>
+            <span class="n">title</span><span class="p">,</span>
+            <span class="p">[</span><span class="s2">&quot;--list&quot;</span><span class="p">,</span> <span class="s2">&quot;--radiolist&quot;</span><span class="p">,</span> <span class="s2">&quot;--text&quot;</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="s2">&quot;--column&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;--column&quot;</span><span class="p">,</span> <span class="s2">&quot;Options&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">choices</span><span class="p">,</span>
+            <span class="n">kwargs</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="GtkDialog.list_menu_multi"><a class="viewcode-back" href="../../api/gtkdialog.html#autokey.scripting.GtkDialog.list_menu_multi">[docs]</a>    <span class="k">def</span> <span class="nf">list_menu_multi</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Choose one or more values&quot;</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Choose one or more values&quot;</span><span class="p">,</span>
+                        <span class="n">defaults</span><span class="p">:</span> <span class="nb">list</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Show a multiple-selection list menu</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{dialog.list_menu_multi(options, title=&quot;Choose one or more values&quot;, message=&quot;Choose one or more values&quot;, defaults=[], **kwargs)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param options: list of options (strings) for the dialog</span>
+<span class="sd">        @param title: window title for the dialog</span>
+<span class="sd">        @param message: message displayed above the list</span>
+<span class="sd">        @param defaults: list of default values to be selected</span>
+<span class="sd">        @return: a tuple containing the exit code and user choice</span>
+<span class="sd">        @rtype: C{DialogData(int, List[str])}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">defaults</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">defaults</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">choices</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">options</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">option</span> <span class="ow">in</span> <span class="n">defaults</span><span class="p">:</span>
+                <span class="n">choices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;TRUE&quot;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">choices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;FALSE&quot;</span><span class="p">)</span>
+                
+            <span class="n">choices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">option</span><span class="p">)</span>
+        <span class="n">return_code</span><span class="p">,</span> <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_zenity</span><span class="p">(</span>
+            <span class="n">title</span><span class="p">,</span>
+            <span class="p">[</span><span class="s2">&quot;--list&quot;</span><span class="p">,</span> <span class="s2">&quot;--checklist&quot;</span><span class="p">,</span> <span class="s2">&quot;--text&quot;</span><span class="p">,</span> <span class="n">message</span><span class="p">,</span> <span class="s2">&quot;--column&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;--column&quot;</span><span class="p">,</span> <span class="s2">&quot;Options&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">choices</span><span class="p">,</span>
+            <span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">output</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;|&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">DialogData</span><span class="p">(</span><span class="n">return_code</span><span class="p">,</span> <span class="n">results</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="GtkDialog.open_file"><a class="viewcode-back" href="../../api/gtkdialog.html#autokey.scripting.GtkDialog.open_file">[docs]</a>    <span class="k">def</span> <span class="nf">open_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Open File&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Show an Open File dialog</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{dialog.open_file(title=&quot;Open File&quot;, **kwargs)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param title: window title for the dialog</span>
+<span class="sd">        @return: a tuple containing the exit code and file path</span>
+<span class="sd">        @rtype: C{DialogData(int, str)}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#if rememberAs is not None:</span>
+        <span class="c1">#    return self._run_zenity(title, [&quot;--getopenfilename&quot;, initialDir, fileTypes, &quot;:&quot; + rememberAs])</span>
+        <span class="c1">#else:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_zenity</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;--file-selection&quot;</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="GtkDialog.save_file"><a class="viewcode-back" href="../../api/gtkdialog.html#autokey.scripting.GtkDialog.save_file">[docs]</a>    <span class="k">def</span> <span class="nf">save_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Save As&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Show a Save As dialog</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{dialog.save_file(title=&quot;Save As&quot;, **kwargs)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param title: window title for the dialog</span>
+<span class="sd">        @return: a tuple containing the exit code and file path</span>
+<span class="sd">        @rtype: C{DialogData(int, str)}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#if rememberAs is not None:</span>
+        <span class="c1">#    return self._run_zenity(title, [&quot;--getsavefilename&quot;, initialDir, fileTypes, &quot;:&quot; + rememberAs])</span>
+        <span class="c1">#else:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_zenity</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;--file-selection&quot;</span><span class="p">,</span> <span class="s2">&quot;--save&quot;</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="GtkDialog.choose_directory"><a class="viewcode-back" href="../../api/gtkdialog.html#autokey.scripting.GtkDialog.choose_directory">[docs]</a>    <span class="k">def</span> <span class="nf">choose_directory</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Select Directory&quot;</span><span class="p">,</span> <span class="n">initialDir</span><span class="o">=</span><span class="s2">&quot;~&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Show a Directory Chooser dialog</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{dialog.choose_directory(title=&quot;Select Directory&quot;, **kwargs)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param title: window title for the dialog</span>
+<span class="sd">        @param initialDir:</span>
+<span class="sd">        @return: a tuple containing the exit code and path</span>
+<span class="sd">        @rtype: C{DialogData(int, str)}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#if rememberAs is not None:</span>
+        <span class="c1">#    return self._run_zenity(title, [&quot;--getexistingdirectory&quot;, initialDir, &quot;:&quot; + rememberAs])</span>
+        <span class="c1">#else:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_zenity</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;--file-selection&quot;</span><span class="p">,</span> <span class="s2">&quot;--directory&quot;</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="GtkDialog.choose_colour"><a class="viewcode-back" href="../../api/gtkdialog.html#autokey.scripting.GtkDialog.choose_colour">[docs]</a>    <span class="k">def</span> <span class="nf">choose_colour</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Select Colour&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Show a Colour Chooser dialog</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{dialog.choose_colour(title=&quot;Select Colour&quot;)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param title: window title for the dialog</span>
+<span class="sd">        @return:</span>
+<span class="sd">        @rtype: C{DialogData(int, Optional[ColourData])}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">return_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_zenity</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;--color-selection&quot;</span><span class="p">],</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">return_data</span><span class="o">.</span><span class="n">successful</span><span class="p">:</span>
+            <span class="n">converted_colour</span> <span class="o">=</span> <span class="n">ColourData</span><span class="o">.</span><span class="n">from_zenity_tuple_str</span><span class="p">(</span><span class="n">return_data</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">DialogData</span><span class="p">(</span><span class="n">return_data</span><span class="o">.</span><span class="n">return_code</span><span class="p">,</span> <span class="n">converted_colour</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">DialogData</span><span class="p">(</span><span class="n">return_data</span><span class="o">.</span><span class="n">return_code</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="GtkDialog.calendar"><a class="viewcode-back" href="../../api/gtkdialog.html#autokey.scripting.GtkDialog.calendar">[docs]</a>    <span class="k">def</span> <span class="nf">calendar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Choose a date&quot;</span><span class="p">,</span> <span class="n">format_str</span><span class="o">=</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">date</span><span class="o">=</span><span class="s2">&quot;today&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Show a calendar dialog</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{dialog.calendar_dialog(title=&quot;Choose a date&quot;, format=&quot;%Y-%m-%d&quot;, date=&quot;YYYY-MM-DD&quot;, **kwargs)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param title: window title for the dialog</span>
+<span class="sd">        @param format_str: format of date to be returned</span>
+<span class="sd">        @param date: initial date as YYYY-MM-DD, otherwise today</span>
+<span class="sd">        @return: a tuple containing the exit code and date</span>
+<span class="sd">        @rtype: C{DialogData(int, str)}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[0-9]</span><span class="si">{4}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">-[0-9]</span><span class="si">{2}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">date</span><span class="p">):</span>
+            <span class="n">year</span> <span class="o">=</span> <span class="n">date</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">4</span><span class="p">]</span>
+            <span class="n">month</span> <span class="o">=</span> <span class="n">date</span><span class="p">[</span><span class="mi">5</span><span class="p">:</span><span class="mi">7</span><span class="p">]</span>
+            <span class="n">day</span> <span class="o">=</span> <span class="n">date</span><span class="p">[</span><span class="mi">8</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span>
+            <span class="n">date_args</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;--year=&quot;</span> <span class="o">+</span> <span class="n">year</span><span class="p">,</span> <span class="s2">&quot;--month=&quot;</span> <span class="o">+</span> <span class="n">month</span><span class="p">,</span> <span class="s2">&quot;--day=&quot;</span> <span class="o">+</span> <span class="n">day</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">date_args</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_zenity</span><span class="p">(</span><span class="n">title</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;--calendar&quot;</span><span class="p">,</span> <span class="s2">&quot;--date-format=&quot;</span> <span class="o">+</span> <span class="n">format_str</span><span class="p">]</span> <span class="o">+</span> <span class="n">date_args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span></div></div>
+
+    
+<div class="viewcode-block" id="QtClipboard"><a class="viewcode-back" href="../../api/qtclipboard.html#autokey.scripting.QtClipboard">[docs]</a><span class="k">class</span> <span class="nc">QtClipboard</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read/write access to the X selection and clipboard - QT version</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clipBoard</span> <span class="o">=</span> <span class="n">QApplication</span><span class="o">.</span><span class="n">clipboard</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">app</span> <span class="o">=</span> <span class="n">app</span>
+        
+<div class="viewcode-block" id="QtClipboard.fill_selection"><a class="viewcode-back" href="../../api/qtclipboard.html#autokey.scripting.QtClipboard.fill_selection">[docs]</a>    <span class="k">def</span> <span class="nf">fill_selection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">contents</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Copy text into the X selection</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{clipboard.fill_selection(contents)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param contents: string to be placed in the selection</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__execAsync</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__fillSelection</span><span class="p">,</span> <span class="n">contents</span><span class="p">)</span></div>
+        
+    <span class="k">def</span> <span class="nf">__fillSelection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">string</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clipBoard</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="n">QClipboard</span><span class="o">.</span><span class="n">Selection</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sem</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+        
+<div class="viewcode-block" id="QtClipboard.get_selection"><a class="viewcode-back" href="../../api/qtclipboard.html#autokey.scripting.QtClipboard.get_selection">[docs]</a>    <span class="k">def</span> <span class="nf">get_selection</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read text from the X selection</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{clipboard.get_selection()}</span>
+
+<span class="sd">        @return: text contents of the mouse selection</span>
+<span class="sd">        @rtype: C{str}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__execAsync</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__getSelection</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">)</span></div>
+        
+    <span class="k">def</span> <span class="nf">__getSelection</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clipBoard</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">QClipboard</span><span class="o">.</span><span class="n">Selection</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sem</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+        
+<div class="viewcode-block" id="QtClipboard.fill_clipboard"><a class="viewcode-back" href="../../api/qtclipboard.html#autokey.scripting.QtClipboard.fill_clipboard">[docs]</a>    <span class="k">def</span> <span class="nf">fill_clipboard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">contents</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Copy text into the clipboard</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{clipboard.fill_clipboard(contents)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param contents: string to be placed in the selection</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__execAsync</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__fillClipboard</span><span class="p">,</span> <span class="n">contents</span><span class="p">)</span></div>
+        
+    <span class="k">def</span> <span class="nf">__fillClipboard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">string</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clipBoard</span><span class="o">.</span><span class="n">setText</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="n">QClipboard</span><span class="o">.</span><span class="n">Clipboard</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sem</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>        
+        
+<div class="viewcode-block" id="QtClipboard.get_clipboard"><a class="viewcode-back" href="../../api/qtclipboard.html#autokey.scripting.QtClipboard.get_clipboard">[docs]</a>    <span class="k">def</span> <span class="nf">get_clipboard</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read text from the clipboard</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{clipboard.get_clipboard()}</span>
+
+<span class="sd">        @return: text contents of the clipboard</span>
+<span class="sd">        @rtype: C{str}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__execAsync</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">__getClipboard</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">text</span><span class="p">)</span></div>
+        
+    <span class="k">def</span> <span class="nf">__getClipboard</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clipBoard</span><span class="o">.</span><span class="n">text</span><span class="p">(</span><span class="n">QClipboard</span><span class="o">.</span><span class="n">Clipboard</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sem</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+        
+    <span class="k">def</span> <span class="nf">__execAsync</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sem</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Semaphore</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">exec_in_main</span><span class="p">(</span><span class="n">callback</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sem</span><span class="o">.</span><span class="n">acquire</span><span class="p">()</span>        </div>
+        
+        
+<div class="viewcode-block" id="GtkClipboard"><a class="viewcode-back" href="../../api/gtkclipboard.html#autokey.scripting.GtkClipboard">[docs]</a><span class="k">class</span> <span class="nc">GtkClipboard</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Read/write access to the X selection and clipboard - GTK version</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">app</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clipBoard</span> <span class="o">=</span> <span class="n">Gtk</span><span class="o">.</span><span class="n">Clipboard</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">Gdk</span><span class="o">.</span><span class="n">SELECTION_CLIPBOARD</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selection</span> <span class="o">=</span> <span class="n">Gtk</span><span class="o">.</span><span class="n">Clipboard</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">Gdk</span><span class="o">.</span><span class="n">SELECTION_PRIMARY</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">app</span> <span class="o">=</span> <span class="n">app</span>
+        
+<div class="viewcode-block" id="GtkClipboard.fill_selection"><a class="viewcode-back" href="../../api/gtkclipboard.html#autokey.scripting.GtkClipboard.fill_selection">[docs]</a>    <span class="k">def</span> <span class="nf">fill_selection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">contents</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Copy text into the X selection</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{clipboard.fill_selection(contents)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param contents: string to be placed in the selection</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1">#self.__execAsync(self.__fillSelection, contents)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__fillSelection</span><span class="p">(</span><span class="n">contents</span><span class="p">)</span></div>
+        
+    <span class="k">def</span> <span class="nf">__fillSelection</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">string</span><span class="p">):</span>
+        <span class="n">Gdk</span><span class="o">.</span><span class="n">threads_enter</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">selection</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span><span class="n">string</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">Gdk</span><span class="o">.</span><span class="n">threads_leave</span><span class="p">()</span>
+        <span class="c1">#self.sem.release()</span>
+        
+<div class="viewcode-block" id="GtkClipboard.get_selection"><a class="viewcode-back" href="../../api/gtkclipboard.html#autokey.scripting.GtkClipboard.get_selection">[docs]</a>    <span class="k">def</span> <span class="nf">get_selection</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read text from the X selection</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{clipboard.get_selection()}</span>
+
+<span class="sd">        @return: text contents of the mouse selection</span>
+<span class="sd">        @rtype: C{str}</span>
+<span class="sd">        @raise Exception: if no text was found in the selection</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">Gdk</span><span class="o">.</span><span class="n">threads_enter</span><span class="p">()</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">selection</span><span class="o">.</span><span class="n">wait_for_text</span><span class="p">()</span>
+        <span class="n">Gdk</span><span class="o">.</span><span class="n">threads_leave</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">text</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">text</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;No text found in X selection&quot;</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="GtkClipboard.fill_clipboard"><a class="viewcode-back" href="../../api/gtkclipboard.html#autokey.scripting.GtkClipboard.fill_clipboard">[docs]</a>    <span class="k">def</span> <span class="nf">fill_clipboard</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">contents</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Copy text into the clipboard</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{clipboard.fill_clipboard(contents)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param contents: string to be placed in the selection</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">Gdk</span><span class="o">.</span><span class="n">threads_enter</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">Gtk</span><span class="o">.</span><span class="n">get_major_version</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="mi">3</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">clipBoard</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span><span class="n">contents</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">clipBoard</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span><span class="n">contents</span><span class="p">)</span>
+        <span class="n">Gdk</span><span class="o">.</span><span class="n">threads_leave</span><span class="p">()</span>      </div>
+        
+<div class="viewcode-block" id="GtkClipboard.get_clipboard"><a class="viewcode-back" href="../../api/gtkclipboard.html#autokey.scripting.GtkClipboard.get_clipboard">[docs]</a>    <span class="k">def</span> <span class="nf">get_clipboard</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Read text from the clipboard</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{clipboard.get_clipboard()}</span>
+
+<span class="sd">        @return: text contents of the clipboard</span>
+<span class="sd">        @rtype: C{str}</span>
+<span class="sd">        @raise Exception: if no text was found on the clipboard</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">Gdk</span><span class="o">.</span><span class="n">threads_enter</span><span class="p">()</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">clipBoard</span><span class="o">.</span><span class="n">wait_for_text</span><span class="p">()</span>
+        <span class="n">Gdk</span><span class="o">.</span><span class="n">threads_leave</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">text</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">text</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;No text found on clipboard&quot;</span><span class="p">)</span></div></div>
+
+        
+<div class="viewcode-block" id="Window"><a class="viewcode-back" href="../../api/window.html#autokey.scripting.Window">[docs]</a><span class="k">class</span> <span class="nc">Window</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Basic window management using wmctrl</span>
+<span class="sd">    </span>
+<span class="sd">    Note: in all cases where a window title is required (with the exception of wait_for_focus()), </span>
+<span class="sd">    two special values of window title are permitted:</span>
+<span class="sd">    </span>
+<span class="sd">    :ACTIVE: - select the currently active window</span>
+<span class="sd">    :SELECT: - select the desired window by clicking on it</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mediator</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mediator</span> <span class="o">=</span> <span class="n">mediator</span>
+        
+<div class="viewcode-block" id="Window.wait_for_focus"><a class="viewcode-back" href="../../api/window.html#autokey.scripting.Window.wait_for_focus">[docs]</a>    <span class="k">def</span> <span class="nf">wait_for_focus</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">timeOut</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Wait for window with the given title to have focus</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{window.wait_for_focus(title, timeOut=5)}</span>
+<span class="sd">        </span>
+<span class="sd">        If the window becomes active, returns True. Otherwise, returns False if</span>
+<span class="sd">        the window has not become active by the time the timeout has elapsed.</span>
+<span class="sd">        </span>
+<span class="sd">        @param title: title to match against (as a regular expression)</span>
+<span class="sd">        @param timeOut: period (seconds) to wait before giving up</span>
+<span class="sd">        @rtype: boolean</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+        <span class="n">waited</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">waited</span> <span class="o">&lt;=</span> <span class="n">timeOut</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">regex</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mediator</span><span class="o">.</span><span class="n">interface</span><span class="o">.</span><span class="n">get_window_title</span><span class="p">()):</span>
+                <span class="k">return</span> <span class="kc">True</span>
+            
+            <span class="k">if</span> <span class="n">timeOut</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">break</span>  <span class="c1"># zero length timeout, if not matched go straight to end</span>
+                
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.3</span><span class="p">)</span>
+            <span class="n">waited</span> <span class="o">+=</span> <span class="mf">0.3</span>
+            
+        <span class="k">return</span> <span class="kc">False</span></div>
+        
+<div class="viewcode-block" id="Window.wait_for_exist"><a class="viewcode-back" href="../../api/window.html#autokey.scripting.Window.wait_for_exist">[docs]</a>    <span class="k">def</span> <span class="nf">wait_for_exist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">timeOut</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Wait for window with the given title to be created</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{window.wait_for_exist(title, timeOut=5)}</span>
+
+<span class="sd">        If the window is in existence, returns True. Otherwise, returns False if</span>
+<span class="sd">        the window has not been created by the time the timeout has elapsed.</span>
+<span class="sd">        </span>
+<span class="sd">        @param title: title to match against (as a regular expression)</span>
+<span class="sd">        @param timeOut: period (seconds) to wait before giving up</span>
+<span class="sd">        @rtype: boolean</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">regex</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">title</span><span class="p">)</span>
+        <span class="n">waited</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">while</span> <span class="n">waited</span> <span class="o">&lt;=</span> <span class="n">timeOut</span><span class="p">:</span>
+            <span class="n">retCode</span><span class="p">,</span> <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_wmctrl</span><span class="p">([</span><span class="s2">&quot;-l&quot;</span><span class="p">])</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">output</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">regex</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="n">line</span><span class="p">[</span><span class="mi">14</span><span class="p">:]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+                    
+            <span class="k">if</span> <span class="n">timeOut</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">break</span>  <span class="c1"># zero length timeout, if not matched go straight to end</span>
+
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.3</span><span class="p">)</span>
+            <span class="n">waited</span> <span class="o">+=</span> <span class="mf">0.3</span>
+            
+        <span class="k">return</span> <span class="kc">False</span></div>
+        
+<div class="viewcode-block" id="Window.activate"><a class="viewcode-back" href="../../api/window.html#autokey.scripting.Window.activate">[docs]</a>    <span class="k">def</span> <span class="nf">activate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">switchDesktop</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">matchClass</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Activate the specified window, giving it input focus</span>
+
+<span class="sd">        Usage: C{window.activate(title, switchDesktop=False, matchClass=False)}</span>
+<span class="sd">        </span>
+<span class="sd">        If switchDesktop is False (default), the window will be moved to the current desktop</span>
+<span class="sd">        and activated. Otherwise, switch to the window&#39;s current desktop and activate it there.</span>
+<span class="sd">        </span>
+<span class="sd">        @param title: window title to match against (as case-insensitive substring match)</span>
+<span class="sd">        @param switchDesktop: whether or not to switch to the window&#39;s current desktop</span>
+<span class="sd">        @param matchClass: if True, match on the window class instead of the title</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">switchDesktop</span><span class="p">:</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;-a&quot;</span><span class="p">,</span> <span class="n">title</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">args</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;-R&quot;</span><span class="p">,</span> <span class="n">title</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">matchClass</span><span class="p">:</span>
+            <span class="n">args</span> <span class="o">+=</span> <span class="p">[</span><span class="s2">&quot;-x&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run_wmctrl</span><span class="p">(</span><span class="n">args</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="Window.close"><a class="viewcode-back" href="../../api/window.html#autokey.scripting.Window.close">[docs]</a>    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">matchClass</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Close the specified window gracefully</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{window.close(title, matchClass=False)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param title: window title to match against (as case-insensitive substring match)</span>
+<span class="sd">        @param matchClass: if True, match on the window class instead of the title</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">matchClass</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_run_wmctrl</span><span class="p">([</span><span class="s2">&quot;-c&quot;</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="s2">&quot;-x&quot;</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_run_wmctrl</span><span class="p">([</span><span class="s2">&quot;-c&quot;</span><span class="p">,</span> <span class="n">title</span><span class="p">])</span></div>
+        
+<div class="viewcode-block" id="Window.resize_move"><a class="viewcode-back" href="../../api/window.html#autokey.scripting.Window.resize_move">[docs]</a>    <span class="k">def</span> <span class="nf">resize_move</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">xOrigin</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">yOrigin</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">width</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">height</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">matchClass</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Resize and/or move the specified window</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{window.close(title, xOrigin=-1, yOrigin=-1, width=-1, height=-1, matchClass=False)}</span>
+
+<span class="sd">        Leaving and of the position/dimension values as the default (-1) will cause that</span>
+<span class="sd">        value to be left unmodified.</span>
+<span class="sd">        </span>
+<span class="sd">        @param title: window title to match against (as case-insensitive substring match)</span>
+<span class="sd">        @param xOrigin: new x origin of the window (upper left corner)</span>
+<span class="sd">        @param yOrigin: new y origin of the window (upper left corner)</span>
+<span class="sd">        @param width: new width of the window</span>
+<span class="sd">        @param height: new height of the window</span>
+<span class="sd">        @param matchClass: if True, match on the window class instead of the title</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">mvArgs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;0&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">xOrigin</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">yOrigin</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">width</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="n">height</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="n">matchClass</span><span class="p">:</span>
+            <span class="n">xArgs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;-x&quot;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">xArgs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run_wmctrl</span><span class="p">([</span><span class="s2">&quot;-r&quot;</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="s2">&quot;-e&quot;</span><span class="p">,</span> <span class="s1">&#39;,&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">mvArgs</span><span class="p">)]</span> <span class="o">+</span> <span class="n">xArgs</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="Window.move_to_desktop"><a class="viewcode-back" href="../../api/window.html#autokey.scripting.Window.move_to_desktop">[docs]</a>    <span class="k">def</span> <span class="nf">move_to_desktop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">deskNum</span><span class="p">,</span> <span class="n">matchClass</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Move the specified window to the given desktop</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{window.move_to_desktop(title, deskNum, matchClass=False)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param title: window title to match against (as case-insensitive substring match)</span>
+<span class="sd">        @param deskNum: desktop to move the window to (note: zero based)</span>
+<span class="sd">        @param matchClass: if True, match on the window class instead of the title</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">matchClass</span><span class="p">:</span>
+            <span class="n">xArgs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;-x&quot;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">xArgs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run_wmctrl</span><span class="p">([</span><span class="s2">&quot;-r&quot;</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="s2">&quot;-t&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">deskNum</span><span class="p">)]</span> <span class="o">+</span> <span class="n">xArgs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Window.switch_desktop"><a class="viewcode-back" href="../../api/window.html#autokey.scripting.Window.switch_desktop">[docs]</a>    <span class="k">def</span> <span class="nf">switch_desktop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">deskNum</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Switch to the specified desktop</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{window.switch_desktop(deskNum)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param deskNum: desktop to switch to (note: zero based)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run_wmctrl</span><span class="p">([</span><span class="s2">&quot;-s&quot;</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">deskNum</span><span class="p">)])</span></div>
+        
+<div class="viewcode-block" id="Window.set_property"><a class="viewcode-back" href="../../api/window.html#autokey.scripting.Window.set_property">[docs]</a>    <span class="k">def</span> <span class="nf">set_property</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="n">action</span><span class="p">,</span> <span class="n">prop</span><span class="p">,</span> <span class="n">matchClass</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Set a property on the given window using the specified action</span>
+
+<span class="sd">        Usage: C{window.set_property(title, action, prop, matchClass=False)}</span>
+<span class="sd">        </span>
+<span class="sd">        Allowable actions: C{add, remove, toggle}</span>
+<span class="sd">        Allowable properties: C{modal, sticky, maximized_vert, maximized_horz, shaded, skip_taskbar,</span>
+<span class="sd">        skip_pager, hidden, fullscreen, above}</span>
+<span class="sd">       </span>
+<span class="sd">        @param title: window title to match against (as case-insensitive substring match)</span>
+<span class="sd">        @param action: one of the actions listed above</span>
+<span class="sd">        @param prop: one of the properties listed above</span>
+<span class="sd">        @param matchClass: if True, match on the window class instead of the title</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">matchClass</span><span class="p">:</span>
+            <span class="n">xArgs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;-x&quot;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">xArgs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run_wmctrl</span><span class="p">([</span><span class="s2">&quot;-r&quot;</span><span class="p">,</span> <span class="n">title</span><span class="p">,</span> <span class="s2">&quot;-b&quot;</span> <span class="o">+</span> <span class="n">action</span> <span class="o">+</span> <span class="s1">&#39;,&#39;</span> <span class="o">+</span> <span class="n">prop</span><span class="p">]</span> <span class="o">+</span> <span class="n">xArgs</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="Window.get_active_geometry"><a class="viewcode-back" href="../../api/window.html#autokey.scripting.Window.get_active_geometry">[docs]</a>    <span class="k">def</span> <span class="nf">get_active_geometry</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the geometry of the currently active window</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{window.get_active_geometry()}</span>
+<span class="sd">        </span>
+<span class="sd">        @return: a 4-tuple containing the x-origin, y-origin, width and height of the window (in pixels)</span>
+<span class="sd">        @rtype: C{tuple(int, int, int, int)}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">active</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mediator</span><span class="o">.</span><span class="n">interface</span><span class="o">.</span><span class="n">get_window_title</span><span class="p">()</span>
+        <span class="n">result</span><span class="p">,</span> <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_wmctrl</span><span class="p">([</span><span class="s2">&quot;-l&quot;</span><span class="p">,</span> <span class="s2">&quot;-G&quot;</span><span class="p">])</span>
+        <span class="n">matchingLine</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">output</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">active</span> <span class="ow">in</span> <span class="n">line</span><span class="p">[</span><span class="mi">34</span><span class="p">:]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="n">matchingLine</span> <span class="o">=</span> <span class="n">line</span>
+                
+        <span class="k">if</span> <span class="n">matchingLine</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="n">matchingLine</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">2</span><span class="p">:</span><span class="mi">6</span><span class="p">]</span>
+            <span class="c1"># return [int(x) for x in output]</span>
+            <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">output</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span></div>
+
+<div class="viewcode-block" id="Window.get_active_title"><a class="viewcode-back" href="../../api/window.html#autokey.scripting.Window.get_active_title">[docs]</a>    <span class="k">def</span> <span class="nf">get_active_title</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the visible title of the currently active window</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{window.get_active_title()}</span>
+<span class="sd">        </span>
+<span class="sd">        @return: the visible title of the currentle active window</span>
+<span class="sd">        @rtype: C{str}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mediator</span><span class="o">.</span><span class="n">interface</span><span class="o">.</span><span class="n">get_window_title</span><span class="p">()</span></div>
+    
+<div class="viewcode-block" id="Window.get_active_class"><a class="viewcode-back" href="../../api/window.html#autokey.scripting.Window.get_active_class">[docs]</a>    <span class="k">def</span> <span class="nf">get_active_class</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the class of the currently active window</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{window.get_active_class()}</span>
+<span class="sd">        </span>
+<span class="sd">        @return: the class of the currentle active window</span>
+<span class="sd">        @rtype: C{str}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mediator</span><span class="o">.</span><span class="n">interface</span><span class="o">.</span><span class="n">get_window_class</span><span class="p">()</span></div>
+        
+    <span class="k">def</span> <span class="nf">_run_wmctrl</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">Popen</span><span class="p">([</span><span class="s2">&quot;wmctrl&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">args</span><span class="p">,</span> <span class="n">stdout</span><span class="o">=</span><span class="n">subprocess</span><span class="o">.</span><span class="n">PIPE</span><span class="p">)</span> <span class="k">as</span> <span class="n">p</span><span class="p">:</span>
+                <span class="n">output</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">communicate</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">()[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># Drop trailing newline</span>
+                <span class="n">returncode</span> <span class="o">=</span> <span class="n">p</span><span class="o">.</span><span class="n">returncode</span>
+        <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;ERROR: Please install wmctrl&#39;</span>
+
+        <span class="k">return</span> <span class="n">returncode</span><span class="p">,</span> <span class="n">output</span></div>
+        
+        
+<div class="viewcode-block" id="Engine"><a class="viewcode-back" href="../../api/engine.html#autokey.scripting.Engine">[docs]</a><span class="k">class</span> <span class="nc">Engine</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Provides access to the internals of AutoKey.</span>
+<span class="sd">    </span>
+<span class="sd">    Note that any configuration changes made using this API while the configuration window</span>
+<span class="sd">    is open will not appear until it is closed and re-opened.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">configManager</span><span class="p">,</span> <span class="n">runner</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configManager</span> <span class="o">=</span> <span class="n">configManager</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">runner</span> <span class="o">=</span> <span class="n">runner</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span> <span class="o">=</span> <span class="n">configManager</span><span class="o">.</span><span class="n">app</span><span class="o">.</span><span class="n">monitor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__returnValue</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        
+<div class="viewcode-block" id="Engine.get_folder"><a class="viewcode-back" href="../../api/engine.html#autokey.scripting.Engine.get_folder">[docs]</a>    <span class="k">def</span> <span class="nf">get_folder</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Retrieve a folder by its title</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{engine.get_folder(title)}</span>
+<span class="sd">        </span>
+<span class="sd">        Note that if more than one folder has the same title, only the first match will be</span>
+<span class="sd">        returned.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">folder</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">configManager</span><span class="o">.</span><span class="n">allFolders</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">folder</span><span class="o">.</span><span class="n">title</span> <span class="o">==</span> <span class="n">title</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">folder</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+        
+<div class="viewcode-block" id="Engine.create_phrase"><a class="viewcode-back" href="../../api/engine.html#autokey.scripting.Engine.create_phrase">[docs]</a>    <span class="k">def</span> <span class="nf">create_phrase</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">folder</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">contents</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a text phrase</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{engine.create_phrase(folder, description, contents)}</span>
+<span class="sd">        </span>
+<span class="sd">        A new phrase with no abbreviation or hotkey is created in the specified folder</span>
+<span class="sd">        </span>
+<span class="sd">        @param folder: folder to place the abbreviation in, retrieved using C{engine.get_folder()}</span>
+<span class="sd">        @param description: description for the phrase</span>
+<span class="sd">        @param contents: the expansion text</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">suspend</span><span class="p">()</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Phrase</span><span class="p">(</span><span class="n">description</span><span class="p">,</span> <span class="n">contents</span><span class="p">)</span>
+        <span class="n">folder</span><span class="o">.</span><span class="n">add_item</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">persist</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">unsuspend</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configManager</span><span class="o">.</span><span class="n">config_altered</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="Engine.create_abbreviation"><a class="viewcode-back" href="../../api/engine.html#autokey.scripting.Engine.create_abbreviation">[docs]</a>    <span class="k">def</span> <span class="nf">create_abbreviation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">folder</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">abbr</span><span class="p">,</span> <span class="n">contents</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a text abbreviation</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{engine.create_abbreviation(folder, description, abbr, contents)}</span>
+<span class="sd">        </span>
+<span class="sd">        When the given abbreviation is typed, it will be replaced with the given</span>
+<span class="sd">        text.</span>
+<span class="sd">        </span>
+<span class="sd">        @param folder: folder to place the abbreviation in, retrieved using C{engine.get_folder()}</span>
+<span class="sd">        @param description: description for the phrase</span>
+<span class="sd">        @param abbr: the abbreviation that will trigger the expansion</span>
+<span class="sd">        @param contents: the expansion text</span>
+<span class="sd">        @raise Exception: if the specified abbreviation is not unique</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">configManager</span><span class="o">.</span><span class="n">check_abbreviation_unique</span><span class="p">(</span><span class="n">abbr</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;The specified abbreviation is already in use&quot;</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">suspend</span><span class="p">()</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Phrase</span><span class="p">(</span><span class="n">description</span><span class="p">,</span> <span class="n">contents</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">modes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">TriggerMode</span><span class="o">.</span><span class="n">ABBREVIATION</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">abbreviations</span> <span class="o">=</span> <span class="p">[</span><span class="n">abbr</span><span class="p">]</span>
+        <span class="n">folder</span><span class="o">.</span><span class="n">add_item</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">persist</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">unsuspend</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configManager</span><span class="o">.</span><span class="n">config_altered</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span></div>
+        
+<div class="viewcode-block" id="Engine.create_hotkey"><a class="viewcode-back" href="../../api/engine.html#autokey.scripting.Engine.create_hotkey">[docs]</a>    <span class="k">def</span> <span class="nf">create_hotkey</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">folder</span><span class="p">,</span> <span class="n">description</span><span class="p">,</span> <span class="n">modifiers</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">contents</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Create a text hotkey</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{engine.create_hotkey(folder, description, modifiers, key, contents)}</span>
+<span class="sd">        </span>
+<span class="sd">        When the given hotkey is pressed, it will be replaced with the given</span>
+<span class="sd">        text. Modifiers must be given as a list of strings, with the following</span>
+<span class="sd">        values permitted:</span>
+<span class="sd">        </span>
+<span class="sd">        &lt;ctrl&gt;</span>
+<span class="sd">        &lt;alt&gt;</span>
+<span class="sd">        &lt;super&gt;</span>
+<span class="sd">        &lt;hyper&gt;</span>
+<span class="sd">        &lt;meta&gt;</span>
+<span class="sd">        &lt;shift&gt;</span>
+<span class="sd">        </span>
+<span class="sd">        The key must be an unshifted character (i.e. lowercase)</span>
+<span class="sd">        </span>
+<span class="sd">        @param folder: folder to place the abbreviation in, retrieved using C{engine.get_folder()}</span>
+<span class="sd">        @param description: description for the phrase</span>
+<span class="sd">        @param modifiers: modifiers to use with the hotkey (as a list)</span>
+<span class="sd">        @param key: the hotkey</span>
+<span class="sd">        @param contents: the expansion text</span>
+<span class="sd">        @raise Exception: if the specified hotkey is not unique</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">modifiers</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">configManager</span><span class="o">.</span><span class="n">check_hotkey_unique</span><span class="p">(</span><span class="n">modifiers</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;The specified hotkey and modifier combination is already in use&quot;</span><span class="p">)</span>
+        
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">suspend</span><span class="p">()</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Phrase</span><span class="p">(</span><span class="n">description</span><span class="p">,</span> <span class="n">contents</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">modes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">TriggerMode</span><span class="o">.</span><span class="n">HOTKEY</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">set_hotkey</span><span class="p">(</span><span class="n">modifiers</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+        <span class="n">folder</span><span class="o">.</span><span class="n">add_item</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="n">p</span><span class="o">.</span><span class="n">persist</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">monitor</span><span class="o">.</span><span class="n">unsuspend</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">configManager</span><span class="o">.</span><span class="n">config_altered</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Engine.run_script"><a class="viewcode-back" href="../../api/engine.html#autokey.scripting.Engine.run_script">[docs]</a>    <span class="k">def</span> <span class="nf">run_script</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">description</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Run an existing script using its description to look it up</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{engine.run_script(description)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param description: description of the script to run</span>
+<span class="sd">        @raise Exception: if the specified script does not exist</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">targetScript</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">configManager</span><span class="o">.</span><span class="n">allItems</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">description</span> <span class="o">==</span> <span class="n">description</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">Script</span><span class="p">):</span>
+                <span class="n">targetScript</span> <span class="o">=</span> <span class="n">item</span>
+
+        <span class="k">if</span> <span class="n">targetScript</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">runner</span><span class="o">.</span><span class="n">run_subscript</span><span class="p">(</span><span class="n">targetScript</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;No script with description &#39;</span><span class="si">%s</span><span class="s2">&#39; found&quot;</span> <span class="o">%</span> <span class="n">description</span><span class="p">)</span></div>
+            
+<div class="viewcode-block" id="Engine.run_script_from_macro"><a class="viewcode-back" href="../../api/engine.html#autokey.scripting.Engine.run_script_from_macro">[docs]</a>    <span class="k">def</span> <span class="nf">run_script_from_macro</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Used internally by AutoKey for phrase macros</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__macroArgs</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="s2">&quot;args&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
+        
+        <span class="k">try</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">run_script</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;name&quot;</span><span class="p">])</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_return_value</span><span class="p">(</span><span class="s2">&quot;{ERROR: </span><span class="si">%s</span><span class="s2">}&quot;</span> <span class="o">%</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span></div>
+            
+<div class="viewcode-block" id="Engine.get_macro_arguments"><a class="viewcode-back" href="../../api/engine.html#autokey.scripting.Engine.get_macro_arguments">[docs]</a>    <span class="k">def</span> <span class="nf">get_macro_arguments</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Get the arguments supplied to the current script via its macro</span>
+
+<span class="sd">        Usage: C{engine.get_macro_arguments()}</span>
+<span class="sd">        </span>
+<span class="sd">        @return: the arguments</span>
+<span class="sd">        @rtype: C{list(str())}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__macroArgs</span></div>
+            
+<div class="viewcode-block" id="Engine.set_return_value"><a class="viewcode-back" href="../../api/engine.html#autokey.scripting.Engine.set_return_value">[docs]</a>    <span class="k">def</span> <span class="nf">set_return_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Store a return value to be used by a phrase macro</span>
+<span class="sd">        </span>
+<span class="sd">        Usage: C{engine.set_return_value(val)}</span>
+<span class="sd">        </span>
+<span class="sd">        @param val: value to be stored</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__returnValue</span> <span class="o">=</span> <span class="n">val</span></div>
+        
+<div class="viewcode-block" id="Engine.get_return_value"><a class="viewcode-back" href="../../api/engine.html#autokey.scripting.Engine.get_return_value">[docs]</a>    <span class="k">def</span> <span class="nf">get_return_value</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Used internally by AutoKey for phrase macros</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ret</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__returnValue</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__returnValue</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">return</span> <span class="n">ret</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Various.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
