@@ -1,5 +1,5 @@
 System API
-============
+==========
 
 .. automodule:: autokey.scripting
    :no-members:

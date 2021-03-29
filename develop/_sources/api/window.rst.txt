@@ -1,5 +1,5 @@
 Window API
-============
+==========
 
 .. automodule:: autokey.scripting
    :no-members:

@@ -1,5 +1,5 @@
 Engine API
-============
+==========
 
 .. automodule:: autokey.scripting
    :no-members:

@@ -12,4 +12,6 @@ Autokey API
    api/system.rst
    api/window.rst
    api/engine.rst
+   api/highlevel.rst
+   api/common.rst
 

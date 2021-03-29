@@ -1,5 +1,5 @@
 Store API
-============
+=========
 
 .. automodule:: autokey.scripting
    :no-members:
