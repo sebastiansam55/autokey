@@ -309,10 +309,13 @@ class SendMode(enum.Enum):
     """
     Enumeration class for phrase send modes
 
-    KEYBOARD: Send using key events
-    CB_CTRL_V: Send via clipboard and paste with Ctrl+v
-    CB_CTRL_SHIFT_V: Send via clipboard and paste with Ctrl+Shift+v
-    SELECTION: Send via X selection and paste with middle mouse button
+    C{KEYBOARD}: Send using key events
+
+    C{CB_CTRL_V}: Send via clipboard and paste with Ctrl+v
+
+    C{CB_CTRL_SHIFT_V}: Send via clipboard and paste with Ctrl+Shift+v
+
+    C{SELECTION}: Send via X selection and paste with middle mouse button
     """
     KEYBOARD = "kb"
     CB_CTRL_V = Key.CONTROL + "+v"

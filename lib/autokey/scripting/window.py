@@ -261,11 +261,12 @@ class Window:
         C{desktop} is the number of which desktop (sometimes called workspaces) the item appears upon.
 
         C{hostname} is the hostname of your computer (I'm not sure why this is included as it seems to be the same for everything I have seen)
-        
+
         C{title} is the title that you would usually see in your window manager of choice.
 
         @param filter_desktop: String, (usually 0-n) to filter the windows by. Any window not on the given desktop will not be returned.
         @return: C{[[hexid1, desktop1, hostname1, title1], [hexid2,desktop2,hostname2,title2], ...etc]}
+
         Returns C{[]} if no windows are found.
         """
         windowList = self._run_wmctrl(["-l"])[1].split("\n")
